@@ -1,0 +1,18 @@
+Generated using built-in image_gen; referenced user's selected blue-and-white homepage design. All four final PNGs preserve real alpha transparency.
+
+## module-video.png
+
+Create ONE standalone icon asset based on the blue video-learning icon in the bottom-left module card of the provided UI reference. Input is a STYLE AND OBJECT REFERENCE only, do not recreate any of the UI. Glossy premium friendly 3D blue rounded video-player tile with a white triangular play button, a second darker blue translucent rounded tile just behind it at a slight angle. View straight-on with slight 3D isometric depth, vivid electric and sky blue, soft studio reflections, smooth rounded beveled edges, subtle soft contact shadow. Tight centered composition on genuinely TRANSPARENT background. The whole icon fills 80% of square 1024x1024 canvas with generous clean transparent margins. No lettering, no text, no interface, no border, no background. High-quality polished 3D illustration, exactly the visual style of the reference icon.
+
+## module-tutor.png
+
+Create ONE standalone icon asset based on the mint open-book tutoring icon in the second bottom module card of the provided UI reference. Input is a STYLE AND OBJECT REFERENCE only, do not recreate any of the UI. Glossy premium friendly 3D open book icon, white paper pages with thin mint turquoise horizontal text lines, luminous emerald-turquoise thick rounded cover and page edges. Front view with slight 3D depth, symmetric open pages, soft studio reflections, smooth rounded beveled edges, subtle soft contact shadow. Tight centered composition on genuinely TRANSPARENT background. The whole icon fills 80% of square 1024x1024 canvas with generous clean transparent margins. No readable letters, no text, no interface, no border, no background. High-quality polished 3D illustration, exactly the visual style of the reference icon.
+
+## module-exam.png
+
+Create ONE standalone icon asset based on the orange theory-exam clipboard icon in the third bottom module card of the provided UI reference. Input is a STYLE AND OBJECT REFERENCE only, do not recreate any of the UI. Glossy premium friendly 3D clipboard checklist icon, warm orange rounded board and top clip, ivory-white paper with three dark gray check marks and short pale gray horizontal lines. A small glossy orange circular badge with a white check mark sits at lower right of clipboard. Front view with slight 3D depth, soft studio reflections, smooth rounded beveled edges, subtle soft contact shadow. Tight centered composition on genuinely TRANSPARENT background. The whole icon fills 80% of square 1024x1024 canvas with generous clean transparent margins. No letters, no text, no interface, no border, no background. High-quality polished 3D illustration, exactly the visual style of the reference icon.
+
+## module-practical.png
+
+Create ONE standalone icon asset based on the violet practical-exam gear-and-caliper icon in the fourth bottom module card of the provided UI reference. Input is a STYLE AND OBJECT REFERENCE only, do not recreate any of the UI. Glossy premium friendly 3D violet-purple mechanical gear on the left and a simple upright vernier caliper on the right, overlapping slightly. Thick rounded bevels, lavender highlights, deep violet edge shading, front view with slight 3D isometric depth, soft studio reflections, subtle soft contact shadow. Tight centered composition on genuinely TRANSPARENT background. The whole icon fills 80% of square 1024x1024 canvas with generous clean transparent margins. No lettering, no numbers, no text, no interface, no border, no background. High-quality polished 3D illustration, exactly the visual style of the reference icon.
+

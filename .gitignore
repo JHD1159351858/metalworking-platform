@@ -1,0 +1,11 @@
+/node_modules/
+/dist/
+/qa/
+.env
+.env.*
+*.local
+*.log
+/assets/reference-home.png
+/assets/trade-review.jpg
+/项目介绍.md
+/金工实习智能体项目介绍.docx
