@@ -1,0 +1,27 @@
+.tab-bar.theory-tabs { margin: 12px 0 16px; }
+.theory-tabs .tab { white-space: nowrap; }
+.theory-tabs + .stack > .info-banner:first-child { margin: 0; }
+.video-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
+}
+.video-workspace .video-stage:has(video) { padding: 0; }
+.video-progress-label, .video-notebook-meta { justify-content: space-between; }
+.video-notebook { background: #f8faff; }
+.video-notebook h2 { display: flex; align-items: center; gap: 8px; }
+.video-notebook h2 svg { color: #1765e9; }
+.video-notebook .textarea { flex: 1; min-height: 210px; }
+.video-lesson-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.theory-program { margin-top: 16px; }
+.theory-program canvas { width: 100%; height: auto; }
+.theory-score { font-size: 32px; }
+
+@media (max-width: 1050px) {
+  .video-workspace { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 620px) {
+  .video-lesson-list { grid-template-columns: minmax(0, 1fr); }
+  .video-notebook .textarea { min-height: 160px; }
+}

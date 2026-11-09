@@ -32,7 +32,7 @@
 .path-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 .path-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-width:0;min-height:244px;border:1px solid #e1e8f2;border-radius:14px;background:#fff;padding:18px 20px 16px;transition:transform .2s,border-color .2s,box-shadow .2s;--path-accent:#256fe3}
 .path-card:hover{transform:translateY(-3px);border-color:var(--path-accent);box-shadow:0 9px 22px #295f9c0d}
-.path-tutor{--path-accent:#149c88}.path-theory{--path-accent:#d78c2b}.path-practical{--path-accent:#7860c8}
+.path-video{--path-accent:#149c88}.path-practical{--path-accent:#d78c2b}.path-feedback{--path-accent:#7860c8}
 .path-card-top{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:49px;margin-bottom:13px}
 .path-index{font-family:'Noto Sans SC',sans-serif;font-size:27px;line-height:1;letter-spacing:-1px;font-weight:700;color:#d6e2f2;font-variant-numeric:tabular-nums}
 .path-card-top img{display:block;width:53px;height:53px;object-fit:contain}

@@ -22,7 +22,7 @@ export const questions = [
 
 export const defaultRules = { totalPass: 80, safetyAll: true, task: '按教师正式任务书完成指定工件加工，并提交程序、结果照片、测量数据与过程记录。当前为流程示例，正式图纸、工艺要求和评分表待教师配置。' };
 const keyFor = (profile, trade) => `metalwork:record:v1:${encodeURIComponent(profile.id)}:${trade.id}`;
-const freshRecord = () => ({ videos: {}, tutoring: [], practice: [], attempts: [], submissions: [] });
+const freshRecord = () => ({ videos: {}, videoNotes: {}, preAssessment: null, feedback: [], tutoring: [], practice: [], attempts: [], submissions: [] });
 export function loadRecord(profile, trade) {
   try { return { ...freshRecord(), ...JSON.parse(localStorage.getItem(keyFor(profile, trade)) || 'null') }; }
   catch { return freshRecord(); }
@@ -42,6 +42,24 @@ export function saveRules(trade, rules) {
 export function getSummary(profile, trade) {
   const r = loadRecord(profile, trade);
   return { videoCompleted: Object.values(r.videos).filter(v => v.completed).length, videoTotal: lessons.length, examPassed: r.attempts.some(a => a.passed), attempts: r.attempts.length, practicalStatus: r.submissions.at(-1)?.status || '未提交' };
+}
+export const courseSteps = [
+  { id: 'pre', title: '课前测评', image: 'exam', description: ['完成素养测评和调查问卷', '了解已有基础与学习需求'], action: '进入测评' },
+  { id: 'video', title: '理论学习及测评', image: 'video', description: ['看视频、记笔记、学章节', '用题库练习检验掌握情况'], action: '进入学习' },
+  { id: 'practical', title: '实操考核', image: 'practical', description: ['完成现场实训任务', '提交材料，等待教师评价'], action: '查看任务' },
+  { id: 'feedback', title: '智能选学及课程反馈', image: 'tutor', description: ['按学习情况选内容复习', '分享心得或给课程提建议'], action: '选学与反馈' },
+];
+
+export function getCoursePath(record) {
+  const passed = record.attempts.some(attempt => attempt.passed);
+  const practicalStatus = record.submissions.at(-1)?.status;
+  const progress = [
+    { status: record.preAssessment ? '课前测评与问卷已填写' : '待填写', complete: Boolean(record.preAssessment) },
+    { status: passed ? '理论测评已达标' : record.attempts.length ? `已练习 ${record.attempts.length} 次 · 可继续巩固` : '待学习与练习', complete: passed },
+    { status: passed ? practicalStatus || '待提交材料' : '理论测评达标后解锁', locked: !passed, complete: practicalStatus === '通过' },
+    { status: record.feedback.length ? '已记录课程反馈' : '查看选学建议', complete: record.feedback.length > 0 },
+  ];
+  return courseSteps.map((step, index) => ({ ...step, ...progress[index], index: `0${index + 1}` }));
 }
 export function gradeAttempt(order, answers, rules) {
   const details = order.map(q => ({ id: q.id, topic: q.topic, category: q.category, correct: Number(answers[q.id]) === q.answer }));

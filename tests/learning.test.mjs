@@ -1,6 +1,6 @@
 import test, { beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { questions, gradeAttempt, loadRecord, saveRecord, getSummary } from '../src/learning-data.js';
+import { questions, gradeAttempt, loadRecord, saveRecord, getSummary, getCoursePath } from '../src/learning-data.js';
 
 beforeEach(() => {
   const items = new Map();
@@ -52,4 +52,22 @@ test('retry history is retained and records stay separate for each student and t
   assert.deepEqual(loadRecord(student, mill).attempts, []);
   assert.equal(getSummary(otherStudent, lathe).examPassed, false);
   assert.equal(getSummary(student, mill).examPassed, false);
+});
+
+test('old records get the new course fields without losing theory eligibility', () => {
+  const student = { id: 'returning-student' };
+  const trade = { id: 'lathe' };
+  saveRecord(student, trade, { attempts: [{ passed: true }] });
+  const record = loadRecord(student, trade);
+  assert.deepEqual(record.videoNotes, {});
+  assert.equal(record.preAssessment, null);
+  assert.deepEqual(record.feedback, []);
+  assert.equal(getCoursePath(record)[2].locked, false);
+
+  const newStudent = { id: 'new-student' };
+  const newRecord = { ...loadRecord(newStudent, trade), preAssessment: { score: 100 }, videoNotes: { intro: '安全规范' } };
+  saveRecord(newStudent, trade, newRecord);
+  assert.equal(getCoursePath(loadRecord(newStudent, trade))[0].complete, true);
+  assert.equal(getCoursePath(loadRecord(newStudent, trade))[2].locked, true);
+  assert.deepEqual(loadRecord(student, trade).videoNotes, {});
 });
