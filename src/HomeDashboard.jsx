@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, PlayCircle, ShieldCheck, LockSimple, CheckCircle, FileText, Code, ChatsCircle, ClipboardText } from '@phosphor-icons/react';
 import { getCoursePath, loadRecord, lessons } from './learning-data.js';
+import { getStudyPlan } from './study-plan.js';
 
 const preparationItems = [
   { title: '先确认安全规范', text: '阅读现场规程，上机前取得教师许可。', icon: ShieldCheck },
@@ -8,7 +9,7 @@ const preparationItems = [
   { title: '核对程序适用条件', text: '结合控制系统、刀具和坐标理解程序。', icon: Code },
 ];
 
-export function HomeDashboard({ profile, trade, onBegin, onNavigate }) {
+export function HomeDashboard({ profile, trade, onBegin, onNavigate, evidence }) {
   const [, refresh] = useState(0);
   useEffect(() => {
     const update = () => refresh(value => value + 1);
@@ -16,7 +17,8 @@ export function HomeDashboard({ profile, trade, onBegin, onNavigate }) {
     return () => window.removeEventListener('learning-updated', update);
   }, []);
 
-  const record = loadRecord(profile, trade);
+  const record = { ...loadRecord(profile, trade), ...evidence };
+  const plan = getStudyPlan(record.preAssessment);
   const path = getCoursePath(record);
   const hasActivity = Boolean(record.preAssessment || Object.keys(record.videos).length || record.attempts.length);
   const nextLesson = lessons.find(lesson => !record.videos[lesson.id]?.completed) || lessons[0];
@@ -37,6 +39,8 @@ export function HomeDashboard({ profile, trade, onBegin, onNavigate }) {
     nextTask = { view: 'pre', label: '建议从这里开始', title: '先做素养测评，填写课前问卷', note: '记录你的学习基础和希望重点了解的内容。', icon: ClipboardText };
   } else if (Object.values(record.videos).filter(video => video.completed).length === lessons.length) {
     nextTask = { view: 'theory', label: '下一步学习任务', title: '到题库练习，检验理论知识', note: '查看答题结果和错题解析，达标后准备实操。', icon: ClipboardText };
+  } else if (plan) {
+    nextTask = { view: plan.view, label: '根据你的课前测评安排', title: plan.title, note: plan.reason, icon: plan.view === 'video' ? PlayCircle : FileText };
   }
   const NextTaskIcon = nextTask.icon;
 
@@ -80,7 +84,7 @@ export function HomeDashboard({ profile, trade, onBegin, onNavigate }) {
         <div className="section-heading"><div><h2 id="learning-path-title">四步完成实训学习</h2><p>先了解自己的基础，再学习、实操和回顾。</p></div><span className="pill path-overview-label">{profile.className}</span></div>
         <div className="path-grid">
           {path.map(step => (
-            <button key={step.id} className={`path-card path-${step.id}`} onClick={() => onBegin(step.id)}>
+            <button key={step.id} className={`path-card path-${step.id}`} onClick={() => onBegin(step.id === 'video' && plan ? plan.view : step.id)}>
               <div className="path-card-top"><span className="path-index">{step.index}</span><img src={`/assets/module-${step.image}.png`} alt="" /></div>
               <h3>{step.title}</h3>
               <p>{step.description[0]}<br />{step.description[1]}</p>

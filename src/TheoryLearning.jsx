@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Notebook } from '@phosphor-icons/react';
 import { DemoNote, Heading } from './LearningUI.jsx';
 import { gradeAttempt, knowledge, lessons, questions, shuffled } from './learning-data.js';
+import { getStudyPlan } from './study-plan.js';
 import './theory-learning.css';
 
 const stamp = () => new Date().toISOString();
 const tabs = [['video', '视频学习'], ['tutor', '课程章节'], ['theory', '题库练习']];
 
 export function TheoryLearning({ view, record, rules, update, onNavigate }) {
+  const plan = getStudyPlan(record.preAssessment);
   return <>
     <Heading kicker="02 / 理论阶段" title="理论学习及测评">
       看视频、读章节，再用题库练习检验掌握情况。
@@ -20,14 +22,15 @@ export function TheoryLearning({ view, record, rules, update, onNavigate }) {
         </button>
       ))}
     </nav>
-    {view === 'video' && <VideoView record={record} update={update} onNavigate={onNavigate} />}
-    {view === 'tutor' && <ChapterView onNavigate={onNavigate} />}
+    {plan?.view === view && <p className="info-banner"><strong>按课前学情安排 · {plan.title}</strong> · {plan.reason}</p>}
+    {view === 'video' && <VideoView record={record} update={update} onNavigate={onNavigate} initialLesson={plan?.view === 'video' ? plan.targetId : null} />}
+    {view === 'tutor' && <ChapterView onNavigate={onNavigate} initialChapter={plan?.view === 'tutor' ? plan.targetId : null} />}
     {view === 'theory' && <QuestionBank record={record} rules={rules} update={update} onNavigate={onNavigate} />}
   </>;
 }
 
-function VideoView({ record, update, onNavigate }) {
-  const [selected, setSelected] = useState(lessons[0]);
+function VideoView({ record, update, onNavigate, initialLesson }) {
+  const [selected, setSelected] = useState(() => lessons.find(lesson => lesson.id === initialLesson) || lessons[0]);
   const [source, setSource] = useState('');
   const [message, setMessage] = useState('');
   const picker = useRef(null);
@@ -141,8 +144,8 @@ function VideoView({ record, update, onNavigate }) {
   </div>;
 }
 
-function ChapterView({ onNavigate }) {
-  const [selected, setSelected] = useState(knowledge[0]);
+function ChapterView({ onNavigate, initialChapter }) {
+  const [selected, setSelected] = useState(() => knowledge.find(chapter => chapter.id === initialChapter) || knowledge[0]);
   return <div className="stack">
     <DemoNote>这些章节用于演示课程结构，正式教学资料待教师提供与审核。</DemoNote>
     <div className="two-column">

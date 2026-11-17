@@ -72,8 +72,8 @@ export function shuffled(items) {
   for (let i = result.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [result[i], result[j]] = [result[j], result[i]]; }
   return result;
 }
-export function downloadRecords(profile, trade) {
-  const blob = new Blob([JSON.stringify({ student: profile, trade, record: loadRecord(profile, trade), exportedAt: new Date().toISOString(), note: '浏览器本地演示记录；附件仅保存文件信息，不含原文件。' }, null, 2)], { type: 'application/json' });
+export function downloadRecords(profile, trade, record = loadRecord(profile, trade)) {
+  const blob = new Blob([JSON.stringify({ student: profile, trade, record, exportedAt: new Date().toISOString(), note: '学习记录导出。附件仅保存文件信息，不含原文件。' }, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = `${trade.name}-学习记录.json`; a.click(); URL.revokeObjectURL(url);
 }

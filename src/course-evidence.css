@@ -21,3 +21,6 @@
 @media (max-width: 840px) {
   .evidence-grid { grid-template-columns: minmax(0, 1fr); }
 }
+.cloud-teacher { width: min(calc(100% - 32px), 1100px); margin: 24px auto; }
+.cloud-teacher-header { justify-content: space-between; }
+.cloud-teacher-header .page-heading { margin-bottom: 0; }
