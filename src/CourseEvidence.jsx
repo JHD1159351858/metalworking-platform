@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, BookOpenText, ClipboardText, PlayCircle } from '@phosphor-icons/react';
+import { ArrowRight, BookOpenText, ClipboardText, PlayCircle, X } from '@phosphor-icons/react';
 import { Heading, DemoNote } from './LearningUI.jsx';
 import { readClassEvidence } from './cloud-evidence.js';
 import { getStudyPlan } from './study-plan.js';
@@ -23,25 +23,42 @@ const literacyGaps = answers => literacyQuestions.filter(q => answers[q.id] !== 
 
 export function PreAssessmentView({ record, update, onNavigate, evidence }) {
   const previous = record.preAssessment;
-  const [answers, setAnswers] = useState(previous?.answers || {});
-  const [survey, setSurvey] = useState(previous || {});
-  const [editing, setEditing] = useState(!previous);
+  const initial = previous || record.preAssessmentDraft || {};
+  const [answers, setAnswers] = useState(initial.answers || {});
+  const [survey, setSurvey] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
+  const [draftError, setDraftError] = useState(false);
   const plan = getStudyPlan(previous);
+
+  function saveDraft(nextAnswers, nextSurvey) {
+    setAnswers(nextAnswers);
+    setSurvey(nextSurvey);
+    try {
+      update(current => current.preAssessment && !evidence ? current : {
+        ...current,
+        preAssessmentDraft: { ...nextSurvey, answers: nextAnswers },
+      });
+      setDraftError(false);
+    } catch {
+      setDraftError(true);
+    }
+  }
 
   async function submit(event) {
     event.preventDefault();
-    if (saving) return;
+    if (saving || previous) return;
     const score = Math.round((1 - literacyGaps(answers).length / literacyQuestions.length) * 100);
     const { experience, confidence, focus, note = '' } = survey;
     const entry = { experience, confidence, focus, note: note.trim(), answers, score, at: new Date().toISOString() };
     setSaving(true);
     setError(false);
     try {
-      if (evidence) await evidence.savePreAssessment(entry);
-      else update(current => ({ ...current, preAssessment: entry }));
-      setEditing(false);
+      if (evidence) {
+        await evidence.savePreAssessment(entry);
+        try { update(current => ({ ...current, preAssessmentDraft: null })); }
+        catch { /* The confirmed cloud record remains the completion state. */ }
+      } else update(current => current.preAssessment ? current : { ...current, preAssessment: entry, preAssessmentDraft: null });
     } catch {
       setError(true);
     } finally {
@@ -51,16 +68,16 @@ export function PreAssessmentView({ record, update, onNavigate, evidence }) {
 
   return <>
     <Heading kicker="01 / PREPARATION" title="课前测评">先做素养测评，再填写课前调查，帮助老师了解你的学习起点。</Heading>
-    <DemoNote>{evidence ? '测评与问卷保存到当前账号，同班教师可查看。' : '本地演示 · 测评与问卷保存在当前浏览器。'}结果用于安排理论学习的起点，实操资格仍按理论测评规则判断。</DemoNote>
-    {!editing && previous ? <div className="panel stack">
+    <DemoNote>{evidence ? '测评与问卷保存到当前账号，同班教师可查看。' : '本地演示 · 测评与问卷保存在当前浏览器。'}每门课程提交一次，保存成功后不再自动弹出。结果用于安排理论学习的起点。</DemoNote>
+    {previous ? <div className="panel stack">
       <div className="evidence-heading"><h2>课前测评已保存</h2><span className="pill success">{formatDate(previous.at)}</span></div>
       <EvidenceSummary entry={previous} />
       {plan && <div className="info-banner"><strong>你的学习起点 · {plan.title}</strong><p>{plan.reason}</p></div>}
       <div className="row">
         <button className="button" onClick={() => onNavigate(plan?.view || 'video')}>按安排开始学习 <ArrowRight size={18} /></button>
-        <button className="button secondary" onClick={() => setEditing(true)}>修改课前测评</button>
       </div>
     </div> : <form className="stack" onSubmit={submit}>
+      <p className="muted" role="status">{draftError ? '草稿暂时无法保存，关闭或刷新可能丢失本次填写内容。' : '未提交的草稿自动保存在当前浏览器，可关闭后继续填写。'}</p>
       <div className="evidence-grid">
         <section className="panel">
           <div className="evidence-heading"><h2>素养测评</h2><span className="pill">{literacyQuestions.length} 道示例题</span></div>
@@ -69,7 +86,7 @@ export function PreAssessmentView({ record, update, onNavigate, evidence }) {
             <legend>{index + 1}. {question.prompt}</legend>
             {question.options.map((option, choice) => <label key={option} className="answer-option">
               <input name={question.id} type="radio" required disabled={saving} checked={answers[question.id] === String(choice)}
-                onChange={() => setAnswers(current => ({ ...current, [question.id]: String(choice) }))} />
+                onChange={() => saveDraft({ ...answers, [question.id]: String(choice) }, survey)} />
               {option}
             </label>)}
           </fieldset>)}
@@ -80,14 +97,14 @@ export function PreAssessmentView({ record, update, onNavigate, evidence }) {
           {surveyFields.map(field => <label key={field.id} className="field">
             {field.label}
             <select className="input" required disabled={saving} value={survey[field.id] || ''}
-              onChange={event => setSurvey(current => ({ ...current, [field.id]: event.target.value }))}>
+              onChange={event => saveDraft(answers, { ...survey, [field.id]: event.target.value })}>
               <option value="" disabled>请选择</option>
               {field.options.map(option => <option key={option}>{option}</option>)}
             </select>
           </label>)}
           <label className="field">还有什么想让老师了解？（选填）
             <textarea className="textarea" rows={4} maxLength={500} disabled={saving} value={survey.note || ''}
-              onChange={event => setSurvey(current => ({ ...current, note: event.target.value }))}
+              onChange={event => saveDraft(answers, { ...survey, note: event.target.value })}
               placeholder="例如：我看过加工演示，但还不熟悉图纸上的标注。" />
           </label>
         </section>
@@ -96,6 +113,27 @@ export function PreAssessmentView({ record, update, onNavigate, evidence }) {
       <div><button className="button" type="submit" disabled={saving}>{saving ? '正在保存…' : '保存测评和问卷'} <ArrowRight size={18} /></button></div>
     </form>}
   </>;
+}
+
+export function PreAssessmentDialog({ profile, trade, onDismiss, ...props }) {
+  const dialog = useRef(null);
+  useEffect(() => {
+    const element = dialog.current;
+    element.showModal();
+    return () => element.close();
+  }, []);
+
+  return <dialog ref={dialog} className="assessment-dialog view-panel" aria-label="首次课前测评"
+    onCancel={event => { event.preventDefault(); onDismiss(); }}
+    onClick={event => {
+      if (event.target !== event.currentTarget) return;
+      const bounds = event.currentTarget.getBoundingClientRect();
+      if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onDismiss();
+    }}>
+    <button className="modal-close icon-button" aria-label="关闭课前测评" onClick={onDismiss}><X /></button>
+    <span className="pill">{profile.name} · {trade.name} · 首次学习</span>
+    <PreAssessmentView {...props} />
+  </dialog>;
 }
 
 function EvidenceSummary({ entry }) {

@@ -24,7 +24,8 @@ export function LearningView({ view, profile, trade, onNavigate, evidence }) {
   const props = { profile, trade, record, rules, update, onNavigate, evidence };
   let content;
   if (['video', 'tutor', 'theory'].includes(view)) content = <TheoryLearning {...props} view={view} />;
-  else if (view === 'pre') content = <PreAssessmentView {...props} />;
+  else if (view === 'pre') content = record.preAssessment ? <PreAssessmentView {...props} />
+    : <><Heading kicker="01 / PREPARATION" title="课前测评">填写进度会自动保留，可以随时继续。</Heading><button className="button" onClick={() => onNavigate('pre')}>继续填写课前测评</button></>;
   else if (view === 'feedback') content = <CourseFeedbackView {...props} />;
   else if (view === 'practical') content = <PracticalView {...props} />;
   else if (view === 'records') content = <RecordsView {...props} />;

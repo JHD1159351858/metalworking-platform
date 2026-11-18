@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cloudClient, profileFields } from './cloud-evidence.js';
+import { chaoxingLoginEnabled, prepareChaoxingLogin, takeChaoxingCallback, finishChaoxingLogin, prepareChaoxingLogout } from './chaoxing-login.js';
+
+const chaoxingCallback = chaoxingLoginEnabled ? takeChaoxingCallback() : null;
 
 function GateCard({ title, children }) {
   return <main className="app">
@@ -28,12 +31,31 @@ function CloudSession({ children }) {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [centerLogoutFailed, setCenterLogoutFailed] = useState(false);
+  const [callbackPending, setCallbackPending] = useState(Boolean(chaoxingCallback));
+  const callbackRequest = useRef(null);
 
   useEffect(() => {
     const { data: { subscription } } = cloudClient.auth.onAuthStateChange((_event, session) => {
       setUserId(session?.user?.id || null);
     });
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!chaoxingCallback) return;
+    let active = true;
+    callbackRequest.current ||= finishChaoxingLogin(chaoxingCallback, cloudClient);
+    callbackRequest.current.then(
+      () => { if (active) setCallbackPending(false); },
+      error => {
+        if (active) {
+          setAuthError(error.message);
+          setCallbackPending(false);
+        }
+      },
+    );
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
@@ -78,6 +100,35 @@ function CloudSession({ children }) {
     }
   }
 
+  async function signInWithChaoxing() {
+    if (busy) return;
+    setBusy(true);
+    setAuthError('');
+    try {
+      const url = await prepareChaoxingLogin();
+      window.location.assign(url);
+    } catch (error) {
+      setAuthError(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function signOutCenter() {
+    setBusy(true);
+    setAuthError('');
+    try {
+      const url = await prepareChaoxingLogout();
+      setCenterLogoutFailed(false);
+      window.location.assign(url);
+    } catch {
+      setCenterLogoutFailed(true);
+      setAuthError('课程账号已退出，但认证中心退出未完成。请检查网络后重试。');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function signOut() {
     setBusy(true);
     setAuthError('');
@@ -86,6 +137,7 @@ function CloudSession({ children }) {
       if (error) throw error;
       setPassword('');
       setProfile(null);
+      if (chaoxingLoginEnabled) await signOutCenter();
     } catch {
       setAuthError('退出失败。请检查网络后重试。');
     } finally {
@@ -93,9 +145,15 @@ function CloudSession({ children }) {
     }
   }
 
+  if (callbackPending) return <GateCard title="正在确认超星身份"><p role="status">正在建立课程登录会话，请稍候。</p></GateCard>;
   if (userId === undefined) return <GateCard title="正在检查登录状态"><p role="status">请稍候。</p></GateCard>;
   if (!userId) return <GateCard title="登录课程账号">
-    <p>请使用管理员开通的邮箱账号。课前问卷和课程反馈会保存到云端。</p>
+    <p>{chaoxingLoginEnabled ? '使用超星账号登录，登录后读取你的课程和班级资料。' : '请使用管理员开通的邮箱账号。课前问卷和课程反馈会保存到云端。'}</p>
+    {chaoxingLoginEnabled && <button className="button full-width" onClick={signInWithChaoxing} disabled={busy}>{busy ? '正在前往超星登录…' : '超星账号登录'}</button>}
+    {authError && <p className="result-banner warning" role="alert">{authError}</p>}
+    {centerLogoutFailed && <button className="button secondary" onClick={signOutCenter} disabled={busy}>重试退出认证中心</button>}
+    <details open={!chaoxingLoginEnabled}>
+      <summary>课程邮箱登录</summary>
     <form onSubmit={signIn}>
       <label className="field">邮箱
         <input className="input" type="email" autoComplete="username" required value={email} onChange={event => setEmail(event.target.value)} />
@@ -103,9 +161,9 @@ function CloudSession({ children }) {
       <label className="field">密码
         <input className="input" type="password" autoComplete="current-password" required value={password} onChange={event => setPassword(event.target.value)} />
       </label>
-      {authError && <p className="result-banner warning" role="alert">{authError}</p>}
       <button className="button" type="submit" disabled={busy}>{busy ? '正在登录…' : '登录'}</button>
     </form>
+    </details>
   </GateCard>;
   if (profile?.userId !== userId || profile.revision !== revision) {
     return <GateCard title="正在确认课程身份"><p role="status">正在从班级名单中确认账号权限。</p></GateCard>;

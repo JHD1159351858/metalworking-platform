@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { isBrowserKey } from './supabase-key.js';
+import { chaoxingLoginEnabled } from './chaoxing-login.js';
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim();
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
-export const cloudRequested = Boolean(url || key);
+export const cloudRequested = Boolean(url || key || chaoxingLoginEnabled);
 
 function connect() {
   if (!url || !isBrowserKey(key)) return null;
@@ -84,9 +85,12 @@ export function useCloudEvidence(accountId, tradeId) {
       user_id: accountId, trade_id: tradeId, experience: entry.experience,
       confidence: entry.confidence, focus: entry.focus, note: entry.note, answers: entry.answers,
     };
-    const result = await cloudClient.from('metalwork_pre_assessments')
-      .upsert(row, { onConflict: 'user_id,trade_id' }).select(assessmentFields).single();
-    const saved = mapAssessment(unwrap(result, '课前测评未保存。请检查网络或联系教师后重试。'));
+    const message = '未能确认课前测评已保存。请检查网络后重试。';
+    unwrap(await cloudClient.from('metalwork_pre_assessments')
+      .upsert(row, { onConflict: 'user_id,trade_id', ignoreDuplicates: true }), message);
+    const result = await cloudClient.from('metalwork_pre_assessments').select(assessmentFields)
+      .eq('user_id', accountId).eq('trade_id', tradeId).single();
+    const saved = mapAssessment(unwrap(result, message));
     updateData(data => ({ ...data, preAssessment: saved }));
     return saved;
   }

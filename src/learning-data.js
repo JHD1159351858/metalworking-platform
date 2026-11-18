@@ -22,7 +22,7 @@ export const questions = [
 
 export const defaultRules = { totalPass: 80, safetyAll: true, task: '按教师正式任务书完成指定工件加工，并提交程序、结果照片、测量数据与过程记录。当前为流程示例，正式图纸、工艺要求和评分表待教师配置。' };
 const keyFor = (profile, trade) => `metalwork:record:v1:${encodeURIComponent(profile.id)}:${trade.id}`;
-const freshRecord = () => ({ videos: {}, videoNotes: {}, preAssessment: null, feedback: [], tutoring: [], practice: [], attempts: [], submissions: [] });
+const freshRecord = () => ({ videos: {}, videoNotes: {}, preAssessment: null, preAssessmentDraft: null, feedback: [], tutoring: [], practice: [], attempts: [], submissions: [] });
 export function loadRecord(profile, trade) {
   try { return { ...freshRecord(), ...JSON.parse(localStorage.getItem(keyFor(profile, trade)) || 'null') }; }
   catch { return freshRecord(); }

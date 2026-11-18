@@ -4,9 +4,9 @@ import { LearningView } from './LearningViews.jsx';
 import { HomeDashboard } from './HomeDashboard.jsx';
 import { StudyCompanion } from './StudyCompanion.jsx';
 import { CloudGate } from './CloudGate.jsx';
-import { CloudTeacherPage } from './CourseEvidence.jsx';
+import { CloudTeacherPage, PreAssessmentDialog } from './CourseEvidence.jsx';
 import { cloudRequested, useCloudEvidence } from './cloud-evidence.js';
-import { courseSteps } from './learning-data.js';
+import { courseSteps, loadRecord, saveRecord } from './learning-data.js';
 import './styles.css';
 import './home-dashboard.css';
 
@@ -47,6 +47,31 @@ function Workspace({ account, onSignOut }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [identity, setIdentity] = useState(profile);
   const [nextView, setNextView] = useState('pre');
+  const [assessmentPrompt, setAssessmentPrompt] = useState(null);
+  const [, refreshRecord] = useState(0);
+  const identityReady = Boolean(account || localStorage.getItem('metal-profile'));
+  const localRecord = loadRecord(profile, trade);
+  const assessmentScope = JSON.stringify([profile.id, trade.id]);
+  const preAssessment = account ? evidence.data?.preAssessment : localRecord.preAssessment;
+  const assessmentReady = !account || Boolean(evidence.data && !evidence.loading && !evidence.error);
+  const assessmentOpen = assessmentPrompt?.scope === assessmentScope ? assessmentPrompt.open : !localRecord.preAssessmentDraft?.dismissed;
+  const showAssessment = trade.open && view !== 'teacher' && identityReady && assessmentReady && !preAssessment && assessmentOpen;
+  useEffect(() => {
+    const refresh = () => refreshRecord(value => value + 1);
+    window.addEventListener('learning-updated', refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener('learning-updated', refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
+  useEffect(() => {
+    if (!identityReady && trade.open && view !== 'teacher') {
+      setIdentity(profile);
+      setNextView(view);
+      setDialog('identity');
+    }
+  }, [identityReady, profile, trade.open, view]);
   useEffect(() => {
     const onHash = () => setView(studentView(account));
     addEventListener('hashchange', onHash);
@@ -58,7 +83,18 @@ function Workspace({ account, onSignOut }) {
     return () => removeEventListener('keydown', close);
   }, []);
   function navigate(id) {
+    if (id === 'pre') setAssessmentPrompt({ scope: assessmentScope, open: true });
     setView(id); location.hash = id; setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+  function dismissAssessment() {
+    setAssessmentPrompt({ scope: assessmentScope, open: false });
+    const current = loadRecord(profile, trade);
+    try {
+      saveRecord(profile, trade, {
+        ...current,
+        preAssessmentDraft: { ...current.preAssessmentDraft, dismissed: true },
+      });
+    } catch { /* The dialog can still close when local storage is unavailable. */ }
   }
   function begin(id = 'pre') {
     if (!trade.open) return;
@@ -69,6 +105,7 @@ function Workspace({ account, onSignOut }) {
     e.preventDefault();
     const updated = { ...identity, name: identity.name.trim(), id: identity.id.trim() };
     setProfile(updated); localStorage.setItem('metal-profile', JSON.stringify(updated)); setDialog(null); navigate(nextView);
+    if (nextView === 'pre') setAssessmentPrompt({ scope: JSON.stringify([updated.id, trade.id]), open: true });
   }
   const stepId = view === 'tutor' || view === 'theory' ? 'video' : view;
   const currentTitle = courseSteps.find(step => step.id === stepId)?.title || ({ center: '学习中心', knowledge: '知识库', records: '学习记录', teacher: '教师工作台' }[view]);
@@ -124,6 +161,15 @@ function Workspace({ account, onSignOut }) {
         {dialog === 'trades' && <><span className="eyebrow">WORKSHOPS</span><h2 id="modal-title">选择你的实习工种</h2><p className="muted">本学期 11 个工种的完整名单由教师最终确认。</p><div className="trade-modal-grid">{trades.map(t => <button key={t.id} onClick={() => { setTrade(t); navigate('home'); setDialog(null); }}><img src={`/assets/trade-${t.id}.png`} width={44} height={44} alt="" /><strong>{t.name}</strong><span className={`pill ${t.open ? 'available' : ''}`}>{t.open ? '可体验' : '待开放'}</span></button>)}</div><p className="muted">其余工种将在教学内容配置完成后展示。</p></>}
         {dialog === 'about' && <><span className="eyebrow">ABOUT THIS PROTOTYPE</span><h2 id="modal-title">金工实习智能体 · 教学演示</h2><p>完成课前问卷后，系统按答题结果和学习需求安排第二步的起点。</p><p>{account ? '课前测评、问卷和课程反馈保存在账号下，同班教师可查看。视频、笔记、题库练习和实操材料信息仍保存在当前浏览器。' : '当前为本地演示，学习数据保存在当前浏览器。教师端用于演示查看与评价。'}</p><p>伴学使用示例资料，坐标视图用于理解走刀方向。现场上机和最终实操评价均由教师决定。</p></>}
       </section></div>}
+      {showAssessment && <PreAssessmentDialog
+        key={`${profile.id}-${trade.id}`}
+        profile={profile}
+        trade={trade}
+        record={account ? { ...localRecord, ...evidence.data } : localRecord}
+        evidence={account ? evidence : null}
+        update={change => saveRecord(profile, trade, change(loadRecord(profile, trade)))}
+        onDismiss={dismissAssessment}
+      />}
     </div>
   );
 }
