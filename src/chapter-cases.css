@@ -1,0 +1,25 @@
+.case-library .case-library-index {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #cfdef2;
+  background: var(--wash);
+}
+.case-library-index summary { color: #264a79; font-weight: 700; }
+.case-library-index summary span { margin-left: 8px; font-size: 12px; font-weight: 500; }
+.case-library-index nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 136px), 1fr));
+  gap: 6px;
+  margin-top: 12px;
+}
+.case-library-index nav button {
+  display: flex; align-items: baseline; gap: 7px;
+  padding: 7px 8px; border: 1px solid var(--border); border-radius: 6px;
+  background: white; color: var(--ink); text-align: left; font-size: 13px; line-height: 1.45;
+}
+.case-library-index nav button:hover { border-color: #799ed5; }
+.case-library-index nav button[aria-current] { border-color: var(--blue); background: var(--blue); color: white; }
+.case-library-number { font-weight: 700; font-variant-numeric: tabular-nums; }
+.case-library-index small { display: block; margin-top: 3px; font-size: 11px; }
+.case-current, .case-pagination span { color: #4d6588; font-size: 12px; }
+.case-pagination { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }

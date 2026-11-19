@@ -28,9 +28,11 @@ export const questions = [
   { id: 'q5', category: '工艺理论', topic: '实操最终评价', prompt: '实操考核的最终评分与通过结论由谁决定？', options: ['智能体根据照片自动决定', '学生自评后自动通过', '教师结合现场表现和提交材料决定', '理论分数自动换算决定'], answer: 2 },
 ];
 
-export const defaultRules = { totalPass: 80, safetyAll: true, task: '按教师正式任务书完成指定工件加工，并提交程序、结果照片、测量数据与过程记录。当前为流程示例，正式图纸、工艺要求和评分表待教师配置。' };
-const keyFor = (profile, trade) => `metalwork:record:v1:${encodeURIComponent(profile.id)}:${trade.id}`;
-const freshRecord = () => ({ videos: {}, videoNotes: {}, preAssessment: null, preAssessmentDraft: null, feedback: [], tutoring: [], practice: [], attempts: [], submissions: [] });
+export const defaultRules = { totalPass: 80, safetyAll: true, task: '按教师发布的任务书与图纸完成指定工件加工，并提交程序、结果照片、测量数据与过程记录。' };
+const recordPrefix = 'metalwork:record:v1:';
+const studentPrefix = 'metalwork:student:v1:';
+const keyFor = (profile, trade) => `${recordPrefix}${encodeURIComponent(profile.id)}:${trade.id}`;
+const freshRecord = () => ({ videos: {}, videoNotes: {}, completedChapters: {}, caseDraft: {}, casePractice: [], preAssessment: null, preAssessmentDraft: null, feedback: [], tutoring: [], practice: [], attempts: [], submissions: [] });
 export function loadRecord(profile, trade) {
   try { return { ...freshRecord(), ...JSON.parse(localStorage.getItem(keyFor(profile, trade)) || 'null') }; }
   catch { return freshRecord(); }
@@ -38,6 +40,68 @@ export function loadRecord(profile, trade) {
 export function saveRecord(profile, trade, record) {
   localStorage.setItem(keyFor(profile, trade), JSON.stringify(record));
   window.dispatchEvent(new Event('learning-updated'));
+}
+
+function localStudentProfile(profile) {
+  if (!profile || (profile.role && profile.role !== 'student')) return null;
+  const clean = value => typeof value === 'string' ? value.trim() : '';
+  const { id } = profile;
+  const name = clean(profile.name);
+  if (typeof id !== 'string' || !id.trim() || !name) return null;
+  return {
+    id,
+    name,
+    studentNumber: clean(profile.studentNumber) || id,
+    className: clean(profile.className) || '班级未知',
+    major: clean(profile.major),
+  };
+}
+
+export function rememberStudent(profile) {
+  const student = localStudentProfile(profile);
+  if (!student) return;
+  try {
+    const key = studentPrefix + encodeURIComponent(student.id);
+    const entry = JSON.stringify(student);
+    if (localStorage.getItem(key) !== entry) localStorage.setItem(key, entry);
+  } catch { /* The course can continue when the roster cannot be stored. */ }
+}
+
+export function readLocalStudents(trade) {
+  const students = new Map();
+  const legacyIds = new Set();
+  const tradeSuffix = ':' + trade.id;
+  let keys;
+  try { keys = Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index)); }
+  catch { keys = []; }
+
+  for (const key of keys) {
+    try {
+      if (key?.startsWith(studentPrefix)) {
+        const profile = localStudentProfile(JSON.parse(localStorage.getItem(key)));
+        if (profile) students.set(profile.id, profile);
+      } else if (key?.startsWith(recordPrefix) && key.endsWith(tradeSuffix)) {
+        const id = decodeURIComponent(key.slice(recordPrefix.length, -tradeSuffix.length));
+        const saved = JSON.parse(localStorage.getItem(key));
+        if (id.trim() && saved && typeof saved === 'object' && !Array.isArray(saved)) legacyIds.add(id);
+      }
+    } catch { /* Ignore malformed local entries. */ }
+  }
+
+  try {
+    const profile = localStudentProfile(JSON.parse(localStorage.getItem('metal-profile')));
+    if (profile) students.set(profile.id, profile);
+  } catch { /* Older previews may have left an invalid profile. */ }
+
+  for (const id of legacyIds) {
+    if (!students.has(id)) students.set(id, localStudentProfile({ id, name: id }));
+  }
+
+  return [...students.values()].map(profile => {
+    const record = loadRecord(profile, trade);
+    delete record.preAssessmentDraft;
+    return { profile, record };
+  });
 }
 export function loadRules(trade) {
   try { return { ...defaultRules, ...JSON.parse(localStorage.getItem(`metalwork:rules:v1:${trade.id}`) || 'null') }; }
@@ -64,13 +128,20 @@ export function getCoursePath(record) {
   const progress = [
     { status: record.preAssessment ? '课前测评与问卷已填写' : '待填写', complete: Boolean(record.preAssessment) },
     { status: passed ? '理论测评已达标' : record.attempts.length ? `已练习 ${record.attempts.length} 次 · 可继续巩固` : '待学习与练习', complete: passed },
-    { status: passed ? practicalStatus || '待提交材料' : '理论测评达标后解锁', locked: !passed, complete: practicalStatus === '通过' },
+    { status: passed ? practicalStatus || '待提交材料' : '可先自查 · 达标后提交', locked: !passed, complete: practicalStatus === '通过' },
     { status: record.feedback.length ? '已记录课程反馈' : '查看选学建议', complete: record.feedback.length > 0 },
   ];
   return courseSteps.map((step, index) => ({ ...step, ...progress[index], index: `0${index + 1}` }));
 }
+export function answerIndex(value, options) {
+  const index = typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value;
+  return Number.isInteger(index) && index >= 0 && index < options.length ? index : null;
+}
 export function gradeAttempt(order, answers, rules) {
-  const details = order.map(q => ({ id: q.id, topic: q.topic, category: q.category, correct: Number(answers[q.id]) === q.answer }));
+  const details = order.map(q => {
+    const selectedIndex = answerIndex(answers[q.id], q.options);
+    return { id: q.id, topic: q.topic, category: q.category, selectedIndex, correct: selectedIndex === q.answer };
+  });
   const score = Math.round(details.filter(q => q.correct).length / order.length * 100);
   const safetyPassed = details.filter(q => q.category === '安全知识').every(q => q.correct);
   return { score, safetyPassed, passed: score >= rules.totalPass && (!rules.safetyAll || safetyPassed), details, rules: { totalPass: rules.totalPass, safetyAll: rules.safetyAll } };
@@ -81,7 +152,7 @@ export function shuffled(items) {
   return result;
 }
 export function downloadRecords(profile, trade, record = loadRecord(profile, trade)) {
-  const blob = new Blob([JSON.stringify({ student: profile, trade, record, exportedAt: new Date().toISOString(), note: '学习记录导出。附件仅保存文件信息，不含原文件。' }, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ student: profile, trade, record, exportedAt: new Date().toISOString(), note: '此 JSON 包含附件信息。本浏览器已保存的原件可从对应实操提交中下载。' }, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = `${trade.name}-学习记录.json`; a.click(); URL.revokeObjectURL(url);
 }

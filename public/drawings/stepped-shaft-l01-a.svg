@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="400" viewBox="0 0 900 400" role="img" aria-labelledby="title desc">
+  <title id="title">阶梯轴读图练习，图号 L-01，A 版</title>
+  <desc id="desc">单位毫米。左端面 A 到轴肩面 B 的轴向长度为 20.00 ± 0.10。左段直径 30，右段直径 20，总长 60。轴线水平。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 6" refX="10" refY="3" markerWidth="8" markerHeight="5" orient="auto-start-reverse">
+      <path d="M0 0 10 3 0 6 2 3Z" fill="#304766"/>
+    </marker>
+  </defs>
+  <rect width="900" height="400" fill="#fff"/>
+  <rect x="10" y="10" width="880" height="380" fill="none" stroke="#557391"/>
+  <g font-family="'Microsoft YaHei','Noto Sans CJK SC',sans-serif">
+    <text x="34" y="44" font-size="16" fill="#3e5772">主视图</text>
+    <g stroke="#34516e" stroke-width="1" fill="none">
+      <path d="M230 96V56 M350 96V56 M230 288V327 M590 258V327"/>
+      <path d="M224 102H166 M224 282H166 M596 132H654 M596 252H654"/>
+    </g>
+    <g stroke="#304766" stroke-width="1.4" marker-start="url(#arrow)" marker-end="url(#arrow)">
+      <path d="M230 65H350"/><path d="M230 319H590"/>
+      <path d="M177 102V282"/><path d="M642 132V252"/>
+    </g>
+    <g fill="#203953" font-size="18" text-anchor="middle">
+      <text x="290" y="56" fill="#1458aa" font-weight="bold">20.00 ± 0.10</text>
+      <text x="410" y="312">60</text>
+      <text transform="translate(169 192) rotate(-90)">Φ30</text>
+      <text transform="translate(634 192) rotate(-90)">Φ20</text>
+    </g>
+    <path d="M230 102H350V132H590V252H350V282H230Z" fill="#edf5fc" stroke="#142e48" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M350 132V252" fill="none" stroke="#142e48" stroke-width="2"/>
+    <path d="M210 192H612" fill="none" stroke="#416482" stroke-width="1.25" stroke-dasharray="17 4 3 4"/>
+    <g fill="#1458aa" font-size="16" font-weight="bold">
+      <text x="238" y="123">A</text><text x="330" y="123">B</text>
+    </g>
+    <g stroke="#557391" fill="none">
+      <path d="M10 341H890 M457 341V390 M650 341V390 M775 341V390"/>
+    </g>
+    <g fill="#203953">
+      <text x="32" y="371" font-size="18" font-weight="bold">阶梯轴</text>
+      <text x="111" y="371" font-size="14">项目教学图 · A 左端面　B 轴肩面</text>
+      <text x="473" y="371" font-size="16">图号　L-01</text>
+      <text x="666" y="371" font-size="16">版本　A</text>
+      <text x="788" y="371" font-size="16">单位　mm</text>
+    </g>
+  </g>
+</svg>

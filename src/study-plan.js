@@ -1,7 +1,7 @@
-const introduction = { view: 'video', targetId: 'intro', title: '课程导入与设备认知' };
-const safety = { view: 'tutor', targetId: 'safety', title: '安全规范' };
-const drawing = { view: 'tutor', targetId: 'drawing', title: '图纸与工艺' };
-const program = { view: 'tutor', targetId: 'program', title: '程序理解' };
+const introduction = { view: 'video', targetId: 'intro', target: { lessonId: 'intro' }, title: '课程导入与设备认知' };
+const safety = { view: 'tutor', targetId: 'safety', target: { chapterId: '8.2', activity: 'case' }, title: '实训前的现场确认' };
+const drawing = { view: 'tutor', targetId: 'drawing', target: { chapterId: '8.3', activity: 'case' }, title: '图样要求与检验记录' };
+const program = { view: 'tutor', targetId: 'program', target: { chapterId: '8.4', activity: 'case' }, title: '程序段与轴肩轮廓' };
 const practice = { view: 'theory', targetId: null, title: '题库练习' };
 
 const focusDestinations = new Map([

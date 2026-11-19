@@ -115,3 +115,41 @@
 .companion-compose .button { width: 42px; padding: 8px; }
 .companion-form small { display: block; margin-top: 7px; color: #526b8e; font-size: 11px; }
 .companion-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.companion-context-questions { margin: 0 0 9px; }
+.companion-location { display: block; margin-bottom: 3px; color: #526b8e; text-align: right; }
+.companion-exam { padding: 14px; margin: 0; color: #344c6d; font-size: 13px; line-height: 1.75; }
+.companion-note-link { padding: 4px 0 0; background: transparent; color: #255caa; font-size: 12px; }
+.companion-note-link:disabled { color: #526b8e; }
+.companion-notepad { margin-top: 8px; }
+.companion-notepad label { display: grid; gap: 5px; }
+.companion-notepad .textarea { width: 100%; min-height: 60px; }
+.companion-notepad .button { margin-top: 5px; padding: 4px 8px; }
+.companion-citation { margin-top: 6px; font-size: 11px; color: #526b8e; }
+.companion-citation summary { cursor: pointer; }
+.companion-citation p { margin-top: 5px; }
+
+@media (min-width: 900px) {
+  .main-content.theory-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(255px, 21vw, 320px);
+    align-items: start;
+    column-gap: 16px;
+  }
+  .theory-page > .breadcrumb, .theory-page > [role="alert"] { grid-column: 1 / -1; }
+  .study-companion.companion-docked {
+    position: sticky;
+    inset: 16px auto auto;
+    z-index: 1;
+    display: block;
+    min-width: 0;
+  }
+  .companion-docked .companion-panel {
+    width: 100%;
+    height: min(570px, calc(100dvh - 48px));
+    max-height: none;
+    box-shadow: 0 4px 16px #1839570b;
+  }
+  .companion-docked .companion-transcript { flex: 1; }
+  .companion-docked .companion-compose .input { min-width: 0; }
+}

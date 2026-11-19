@@ -1,0 +1,12 @@
+.bank-directory {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 205px), 1fr)); gap: 8px;
+}
+.bank-directory button {
+  display: grid; gap: 4px; align-content: start; padding: 12px; text-align: left;
+  background: var(--wash); color: #284e7a; border: 1px solid #d8e6fa; border-radius: 9px;
+}
+.bank-directory button[aria-pressed="true"] { border-color: var(--blue); color: #114cad; background: #e3efff; }
+.bank-directory small, .bank-question summary small { color: #566d8d; font-size: 12px; }
+.practice-library .bank-question { margin: 0; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; padding: 11px 0; }
+.bank-question > summary strong { display: block; margin-top: 4px; font-size: 14px; }
+.bank-question > ol { padding-inline-start: 30px; line-height: 1.8; }

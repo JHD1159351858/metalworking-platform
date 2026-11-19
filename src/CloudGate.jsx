@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { getSupabase, hasCloud } from './lib/supabase.js';
+import { getSupabase, hasCloud, platformCloud } from './lib/supabase.js';
 import { profileFields } from './cloud-evidence.js';
 import { chaoxingLoginEnabled, handleOAuthLoginFlow, startChaoxingLogin } from './lib/chaoxing-oauth.js';
+import { StandaloneCloudSession } from './StandaloneCloudGate.jsx';
 
 // 暂不区分班级与身份：所有账号按学生入课，班级先记为占位值。
 const DEFAULT_CLASS = '未分班';
@@ -18,14 +19,19 @@ function GateCard({ title, children }) {
   </main>;
 }
 
-export function CloudGate({ children }) {
+export function CloudGate({ children, renderGuest }) {
+  if (!hasCloud && renderGuest) return renderGuest({});
   if (!hasCloud) return <GateCard title="云端存档配置不完整">
-    <p role="alert">平台未注入 Supabase 连接信息，请重新部署或在项目环境中开启数据库能力。</p>
+    <p role="alert">{platformCloud
+      ? '请确认部署平台已开启数据库能力并注入完整的 Supabase 连接信息。'
+      : '请管理员检查 Supabase 项目地址和可公开的客户端密钥，然后重新构建站点。'}</p>
   </GateCard>;
-  return <CloudSession>{children}</CloudSession>;
+  return platformCloud
+    ? <CloudSession renderGuest={renderGuest}>{children}</CloudSession>
+    : <StandaloneCloudSession Card={GateCard} renderGuest={renderGuest}>{children}</StandaloneCloudSession>;
 }
 
-function CloudSession({ children }) {
+function CloudSession({ children, renderGuest }) {
   const [userId, setUserId] = useState(undefined);
   const [profile, setProfile] = useState(null);
   const [revision, setRevision] = useState(0);
@@ -226,21 +232,15 @@ function CloudSession({ children }) {
 
   if (userId === undefined) return <GateCard title="正在检查登录状态"><p role="status">请稍候。</p></GateCard>;
 
-  if (!userId) return <GateCard title={mode === 'signin' ? '登录课程账号' : '注册课程账号'}>
-    <p>课前测评与课程反馈会保存到云端，换设备登录同一账号即可读回。</p>
-    {chaoxingLoginEnabled && <div className="row">
-      <button className="button secondary" type="button" disabled={busy || oauthBusy} onClick={signInWithChaoxing}>
-        {oauthBusy ? '正在跳转…' : '超星账号一键登录'}
-      </button>
-    </div>}
-    <form onSubmit={mode === 'signin' ? signIn : signUp}>
+  if (!userId) {
+    const emailContent = <form onSubmit={mode === 'signin' ? signIn : signUp}>
       <label className="field">邮箱
         <input className="input" type="email" autoComplete="username" required value={email} onChange={event => setEmail(event.target.value)} />
       </label>
       <label className="field">密码
         <input className="input" type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} required minLength={6} value={password} onChange={event => setPassword(event.target.value)} />
       </label>
-      {authError && <p className="result-banner warning" role="alert">{authError}</p>}
+      {!renderGuest && authError && <p className="result-banner warning" role="alert">{authError}</p>}
       <div className="row">
         <button className="button" type="submit" disabled={busy || oauthBusy}>
           {busy ? '处理中…' : mode === 'signin' ? '登录' : '注册并登录'}
@@ -250,8 +250,23 @@ function CloudSession({ children }) {
           {mode === 'signin' ? '没有账号，去注册' : '已有账号，去登录'}
         </button>
       </div>
-    </form>
-  </GateCard>;
+    </form>;
+    if (renderGuest) return renderGuest({
+      onChaoxing: chaoxingLoginEnabled ? signInWithChaoxing : undefined,
+      oauthBusy: busy || oauthBusy,
+      authError,
+      emailContent,
+    });
+    return <GateCard title={mode === 'signin' ? '登录课程账号' : '注册课程账号'}>
+      <p>课前测评与课程反馈会保存到云端，换设备登录同一账号即可读回。</p>
+      {chaoxingLoginEnabled && <div className="row">
+        <button className="button secondary" type="button" disabled={busy || oauthBusy} onClick={signInWithChaoxing}>
+          {oauthBusy ? '正在跳转…' : '超星账号一键登录'}
+        </button>
+      </div>}
+      {emailContent}
+    </GateCard>;
+  }
 
   if (profile?.userId !== userId || profile.revision !== revision) {
     return <GateCard title="正在确认课程身份"><p role="status">正在读取课程档案。</p></GateCard>;

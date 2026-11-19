@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { getSupabase, hasCloud } from './lib/supabase.js';
+import { getSupabase, hasCloud, platformCloud } from './lib/supabase.js';
 
-export const cloudRequested = hasCloud;
 export const profileFields = 'user_id,display_name,student_number,class_name,role';
-const assessmentFields = 'user_id,experience,confidence,focus,note,answers,updated_at';
+const assessmentFields = 'user_id,experience,confidence,focus,note,answers,updated_at' + (platformCloud ? '' : ',score');
 const feedbackFields = 'id,user_id,type,text,created_at';
 
 const literacyExpected = { safety: '0', drawing: '1', program: '2' };
@@ -15,7 +14,7 @@ function scoreOf(answers) {
 
 const mapAssessment = row => row ? ({
   experience: row.experience, confidence: row.confidence, focus: row.focus, note: row.note,
-  answers: row.answers, score: scoreOf(row.answers), at: row.updated_at,
+  answers: row.answers, score: platformCloud ? scoreOf(row.answers) : row.score, at: row.updated_at,
 }) : null;
 const mapFeedback = row => ({ id: row.id, type: row.type, text: row.text, at: row.created_at });
 
@@ -73,9 +72,12 @@ export function useCloudEvidence(accountId, tradeId) {
       user_id: accountId, trade_id: tradeId, experience: entry.experience,
       confidence: entry.confidence, focus: entry.focus, note: entry.note, answers: entry.answers,
     };
-    const result = await getSupabase().from('metalwork_pre_assessments')
-      .upsert(row, { onConflict: 'user_id,trade_id' }).select(assessmentFields).single();
-    const saved = mapAssessment(unwrap(result, '课前测评未保存。请检查网络或联系教师后重试。'));
+    const message = '未能确认课前测评已保存。请检查网络后重试。';
+    unwrap(await getSupabase().from('metalwork_pre_assessments')
+      .upsert(row, { onConflict: 'user_id,trade_id', ignoreDuplicates: true }), message);
+    const result = await getSupabase().from('metalwork_pre_assessments').select(assessmentFields)
+      .eq('user_id', accountId).eq('trade_id', tradeId).single();
+    const saved = mapAssessment(unwrap(result, message));
     updateData(data => ({ ...data, preAssessment: saved }));
     return saved;
   }

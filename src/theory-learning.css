@@ -1,6 +1,47 @@
 .tab-bar.theory-tabs { margin: 12px 0 16px; }
 .theory-tabs .tab { white-space: nowrap; }
 .theory-tabs + .stack > .info-banner:first-child { margin: 0; }
+.two-column.chapter-layout { grid-template-columns: minmax(190px, .7fr) minmax(0, 1.8fr); align-items: start; }
+.chapter-layout > .chapter-picker { display: none; }
+.chapter-index .lesson-list { grid-template-columns: minmax(0, 1fr); }
+.theory-page > .view-panel { container: theorylesson / inline-size; }
+@container theorylesson (max-width: 725px) {
+  .two-column.chapter-layout, .theory-page .video-workspace { grid-template-columns: minmax(0, 1fr); }
+  .chapter-layout > .chapter-picker { display: grid; min-width: 0; margin: 0; }
+  .chapter-picker select { max-width: 100%; min-width: 0; }
+  .chapter-layout > .chapter-index { display: none; }
+}
+.unit-reading { color: var(--ink); }
+.unit-reading > h2 { margin: 0 0 20px; }
+.unit-reading .reading-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 12px; }
+.unit-reading h3, .unit-reading p { margin: 0; }
+.reading-heading button { display: inline-flex; align-items: center; gap: 4px; padding: 3px 0; background: transparent; color: #245fa9; font-size: 12px; }
+.reading-heading button:hover { text-decoration: underline; }
+.unit-reading .reading-section { margin-bottom: 20px; }
+.unit-reading .reading-section p, .unit-reading .reading-example p { margin-top: 5px; color: #354b65; }
+.reading-example { padding: 14px 17px; border-left: 3px solid #77a9e7; border-radius: 0 8px 8px 0; background: #f1f6fc; }
+.reading-pitfalls { margin-top: 22px; }
+.reading-pitfalls dl { margin: 8px 0 0; }
+.reading-pitfalls dt { font-size: 14px; font-weight: 600; }
+.reading-pitfalls dd { margin: 2px 0 12px; color: #354b65; line-height: 1.8; }
+.unit-reading .reading-source { margin-top: 16px; color: #667a91; font-size: 12px; }
+.case-lesson { scroll-margin-top: 20px; }
+.case-lesson header .eyebrow { color: #34627d; }
+.case-lesson header h2 { margin: 5px 0 0; }
+.shaft-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 10px; }
+.shaft-figure { margin: 0; padding: 12px; border-radius: 10px; border: 1px solid #d6e5ef; background: #f3f7fa; }
+.shaft-figure figcaption { color: #355571; font-size: 13px; font-weight: 650; }
+.shaft-figure svg { display: block; width: 100%; max-height: 150px; }
+.shaft-figure text { font: 600 12px system-ui, sans-serif; }
+.case-field { border: 0; min-width: 0; margin: 0; padding: 0; }
+.case-field legend { padding: 0; margin-bottom: 8px; font-weight: 600; }
+.case-field .answer-option + .answer-option { margin-top: 6px; }
+.case-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.case-options label { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border: 1px solid #cad8e6; border-radius: 8px; cursor: pointer; }
+.case-options label.selected { background: #e9f2ff; border-color: #93b5e1; }
+.supplemental-lessons { margin-top: 12px; }
+.chapter-points { padding-left: 22px; margin: 0; line-height: 1.75; }
+.chapter-points li + li { margin-top: 8px; }
 .video-workspace {
   display: grid;
   grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
@@ -20,6 +61,7 @@
 
 @media (max-width: 1050px) {
   .video-workspace { grid-template-columns: minmax(0, 1fr); }
+  .two-column.chapter-layout { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 620px) {
   .video-lesson-list { grid-template-columns: minmax(0, 1fr); }

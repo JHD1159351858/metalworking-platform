@@ -1,0 +1,12 @@
+.mistake-notebook .evidence-heading { flex-wrap: wrap; gap: 10px; }
+.mistake-notebook .evidence-heading h2 { margin: 0; }
+.notebook-recommendations { background: var(--wash); border-color: #cedff8; }
+.notebook-recommendations ul { list-style: none; padding: 0; margin: 10px 0 0; }
+.notebook-recommendations li { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 14px; padding: 10px 0; border-top: 1px solid #dce7f7; }
+.notebook-recommendations li div { flex: 1 1 280px; min-width: 0; }
+.notebook-recommendations li p, .notebook-question summary span { color: #536b87; font-size: 13px; }
+.notebook-recommendations li p { margin: 4px 0 0; }
+.mistake-notebook .notebook-recommendations details, .mistake-notebook .notebook-analysis { margin-bottom: 0; padding: 10px 0 0; border: 0; }
+.notebook-question > summary strong { display: block; margin-top: 4px; }
+.notebook-question fieldset { min-width: 0; border: 0; padding: 0; margin: 10px 0; }
+.notebook-question legend { padding: 0 0 8px; font-weight: 600; }

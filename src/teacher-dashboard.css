@@ -1,0 +1,171 @@
+.teacher-login-mark {
+  display: inline-grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 12px;
+  background: #e7f0ff;
+  color: #175bc2;
+}
+.teacher-login-link { margin-top: 10px; }
+.teacher-settings { margin-top: 22px; }
+.teacher-settings > summary {
+  padding: 15px 18px;
+  border: 1px solid #dce7f3;
+  border-radius: 12px;
+  background: #fff;
+  color: #20334f;
+  font-weight: 600;
+  cursor: pointer;
+}
+.teacher-settings > .panel { margin-top: 12px; }
+
+.teacher-dashboard {
+  width: min(1440px, calc(100% - 56px));
+  margin: 28px auto 48px;
+  min-width: 0;
+}
+
+.teacher-screen {
+  padding: clamp(20px, 3vw, 42px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--wash);
+  color: var(--blue);
+  box-shadow: 0 5px 18px #173b6d0c;
+}
+
+.teacher-screen-header, .teacher-roster-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+}
+
+.teacher-title-group, .teacher-screen-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.teacher-screen-actions { flex-wrap: wrap; }
+.teacher-dashboard-mark {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 1px solid #c8daf4;
+  border-radius: 12px;
+  background: #e2edfc;
+  color: var(--blue);
+}
+
+.teacher-scope { margin: 0 0 3px; color: #516888; font-size: 13px; }
+.teacher-screen h1 { margin: 0; font-size: clamp(27px, 4vw, 40px); line-height: 1.25; letter-spacing: -.04em; }
+.teacher-screen-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border: 1px solid #c4d5ed;
+  border-radius: 8px;
+  background: #fff;
+  color: #25599c;
+  font-size: 13px;
+}
+.teacher-screen-button:hover { background: #e2edfc; }
+
+.teacher-metrics, .teacher-charts {
+  display: grid;
+  gap: 14px;
+}
+.teacher-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 25px 0 14px; }
+.teacher-metric, .teacher-chart {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+}
+.teacher-metric { padding: 15px 18px; }
+.teacher-metric dt { display: flex; align-items: center; gap: 8px; color: #46607c; font-size: 13px; }
+.teacher-metric dt svg { color: var(--blue); }
+.teacher-metric dd { display: flex; gap: 7px; align-items: baseline; margin: 8px 0 2px; color: #536b88; font-size: 13px; }
+.teacher-metric dd strong { color: var(--blue); font-size: clamp(28px, 3.6vw, 44px); line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+.teacher-metric small { display: block; margin-top: 9px; font-size: 12px; color: #526985; }
+
+.teacher-charts { grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); }
+.teacher-chart { padding: 18px; }
+.teacher-chart h2 { margin: 0; font-size: 17px; }
+.teacher-chart p { margin: 4px 0 13px; font-size: 12px; color: #526985; }
+.teacher-bars { display: grid; gap: 8px; list-style: none; padding: 0; margin: 0; }
+.teacher-bars li > div { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 3px; color: #415b79; font-size: 12px; }
+.teacher-bars li > div > span:last-child { color: #245aa1; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.teacher-bars small { color: #526985; font-size: 11px; font-weight: 400; }
+.teacher-bar-track, .teacher-bar-track > span { display: block; height: 5px; border-radius: 5px; }
+.teacher-bar-track { background: #e1eaf7; overflow: hidden; }
+.teacher-bar-track > span { background: var(--blue); }
+.teacher-source { margin: 17px 0 0; color: #526985; font-size: 12px; line-height: 1.7; }
+.teacher-screen-message { margin: 22px 0 5px; color: #445f80; }
+
+.teacher-roster, .teacher-student-detail {
+  margin-top: 20px;
+  padding: clamp(16px, 2.5vw, 28px);
+  border: 1px solid #dde7f0;
+  border-radius: 15px;
+  background: white;
+}
+.teacher-roster-header h2, .teacher-student-detail > header h2 { margin: 0; font-size: 21px; }
+.teacher-roster-header h2 { display: flex; align-items: center; gap: 9px; }
+.teacher-roster-header h2 svg { color: #1762ed; }
+.teacher-roster-header p, .teacher-student-detail > header p { color: #63778f; font-size: 13px; margin: 5px 0 0; }
+.teacher-roster-filters { display: flex; flex-wrap: wrap; gap: 10px; }
+.teacher-roster-filters .input { width: auto; min-width: 150px; max-width: 100%; }
+.teacher-table-scroll { margin-top: 16px; overflow-x: auto; }
+.teacher-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+.teacher-table thead { color: #4a6280; background: #f2f6fb; }
+.teacher-table th, .teacher-table td { padding: 13px 12px; border-bottom: 1px solid #e9eff6; white-space: nowrap; }
+.teacher-table td { color: #506681; }
+.teacher-table tr.teacher-row-selected { background: #edf5ff; }
+.teacher-student-name span, .teacher-student-name small { display: block; }
+.teacher-student-name small { margin-top: 3px; color: #63778f; font-size: 11px; font-weight: 400; }
+.teacher-status-positive { color: #146e5a; font-weight: 650; }
+.teacher-row-button {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: #eef4ff;
+  color: #1454af;
+  font-size: 12px;
+  font-weight: 700;
+}
+.teacher-row-button:hover, .teacher-row-button[aria-pressed="true"] { background: #dceaff; }
+.teacher-roster-empty { margin: 16px 0 0; padding: 18px; background: #f4f7fb; color: #556e8c; border-radius: 8px; font-size: 14px; }
+.teacher-student-detail > header { margin-bottom: 16px; }
+.teacher-student-detail > header h2 span { margin-left: 4px; color: #63778f; font-size: 14px; font-weight: 500; }
+.teacher-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .teacher-dashboard { width: calc(100% - 32px); margin-top: 18px; }
+  .teacher-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .teacher-screen { padding: 16px; }
+  .teacher-dashboard-mark { width: 42px; height: 42px; }
+  .teacher-charts { grid-template-columns: minmax(0, 1fr); }
+  .teacher-metric { padding: 12px; }
+  .teacher-metric dt { gap: 5px; font-size: 12px; }
+  .teacher-screen-actions { width: 100%; }
+  .teacher-roster-filters .input { width: 100%; }
+}

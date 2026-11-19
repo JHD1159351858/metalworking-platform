@@ -1,0 +1,13 @@
+.center-modules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.center-module { display: flex; flex-direction: column; align-items: flex-start; gap: 15px; }
+.center-module header { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.center-module h2 { display: flex; align-items: center; gap: 9px; font-size: 17px; margin: 0; }
+.center-module h2 span { padding: 4px 7px; border-radius: 6px; font-size: 13px; background: var(--wash); color: var(--blue); }
+.center-module header .pill { color: #245ba3; background: var(--wash); }
+.center-module dl { width: 100%; margin: 0 0 auto; }
+.center-module dl div { display: grid; grid-template-columns: 5em 1fr; gap: 8px; padding: 6px 0; border-top: 1px solid var(--border); font-size: 14px; line-height: 1.6; }
+.center-module dt { color: #556a81; }
+.center-module dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .center-modules { grid-template-columns: 1fr; }
+}

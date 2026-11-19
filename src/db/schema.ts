@@ -11,17 +11,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { authenticatedRole } from 'drizzle-orm/supabase';
 
-// 同班教师可见学生的判定表达式：全部使用裸列名，避免生成 Schema 或别名限定写法。
-const classScope = sql.raw(`(user_id IN (
-    SELECT user_id FROM metalwork_profiles
-    WHERE role = 'student'
-      AND class_name IN (
-        SELECT class_name FROM metalwork_profiles
-        WHERE user_id = (SELECT auth.uid()) AND role = 'teacher'
-      )
-  ))`);
-
-// 班级名单：登录用户可读名单（教师据此查看本班学生），只能为自己建档。
+// 登录用户只能读取个人档案，自助建档时身份固定为未分班学生。
 export const metalworkProfiles = pgTable(
   'metalwork_profiles',
   {
@@ -37,17 +27,17 @@ export const metalworkProfiles = pgTable(
     pgPolicy('metalwork_profiles_select', {
       for: 'select',
       to: authenticatedRole,
-      using: sql`(SELECT auth.uid()) IS NOT NULL`,
+      using: sql`(SELECT auth.uid()) = user_id`,
     }),
     pgPolicy('metalwork_profiles_insert_own', {
       for: 'insert',
       to: authenticatedRole,
-      withCheck: sql`(SELECT auth.uid()) = user_id`,
+      withCheck: sql`(SELECT auth.uid()) = user_id AND role = 'student' AND class_name = '未分班'`,
     }),
   ],
 );
 
-// 课前素养测评与问卷：学生自读写，教师可读同班学生。
+// 课前素养测评与问卷：学生只能读取和提交自己的记录，提交后不可更改。
 export const metalworkPreAssessments = pgTable(
   'metalwork_pre_assessments',
   {
@@ -69,23 +59,17 @@ export const metalworkPreAssessments = pgTable(
     pgPolicy('metalwork_pre_assessments_select', {
       for: 'select',
       to: authenticatedRole,
-      using: sql`(SELECT auth.uid()) = user_id OR ${classScope}`,
+      using: sql`(SELECT auth.uid()) = user_id`,
     }),
     pgPolicy('metalwork_pre_assessments_insert_own', {
       for: 'insert',
       to: authenticatedRole,
       withCheck: sql`(SELECT auth.uid()) = user_id`,
     }),
-    pgPolicy('metalwork_pre_assessments_update_own', {
-      for: 'update',
-      to: authenticatedRole,
-      using: sql`(SELECT auth.uid()) = user_id`,
-      withCheck: sql`(SELECT auth.uid()) = user_id`,
-    }),
   ],
 );
 
-// 课程反馈：学生提交后不可修改，教师可读同班学生。
+// 课程反馈：学生只能读取和提交自己的记录。
 export const metalworkCourseFeedback = pgTable(
   'metalwork_course_feedback',
   {
@@ -108,7 +92,7 @@ export const metalworkCourseFeedback = pgTable(
     pgPolicy('metalwork_course_feedback_select', {
       for: 'select',
       to: authenticatedRole,
-      using: sql`(SELECT auth.uid()) = user_id OR ${classScope}`,
+      using: sql`(SELECT auth.uid()) = user_id`,
     }),
     pgPolicy('metalwork_course_feedback_insert_own', {
       for: 'insert',

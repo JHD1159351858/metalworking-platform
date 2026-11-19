@@ -1,0 +1,45 @@
+.breadcrumb a { color: #4e6171; text-underline-offset: 3px; }
+.breadcrumb .trade-link { color: var(--accent); font-weight: 650; }
+.breadcrumb a:hover { text-decoration-thickness: 2px; }
+.inner-screen .page-heading, .assessment-dialog .page-heading {
+  border-inline-start: 4px solid var(--accent);
+  padding-inline-start: 14px;
+}
+.inner-screen .page-heading h1, .assessment-dialog .page-heading h1 { margin: 0; color: var(--accent); }
+.inner-screen .page-heading p { margin-top: 5px; color: #536777; }
+.inner-screen .trade-button.selected, .inner-screen .button.secondary, .assessment-dialog .button.secondary {
+  color: var(--accent); background: var(--wash);
+  border-color: color-mix(in srgb, var(--accent) 28%, white);
+}
+.inner-screen .button:not(.ghost):not(.secondary):hover, .assessment-dialog .button:not(.ghost):not(.secondary):hover {
+  background: color-mix(in srgb, var(--accent) 88%, black); border-color: var(--accent);
+}
+.inner-screen .tab.active { background: var(--wash); border-radius: 7px 7px 0 0; }
+.inner-screen .answer-option:has(input:checked), .assessment-dialog .answer-option:has(input:checked) {
+  color: var(--accent); border-color: var(--accent); background: var(--wash);
+}
+.inner-screen[data-page="records"] .stat { background: var(--wash); }
+.inner-screen[data-page="records"] .stat strong { color: var(--blue); }
+.inner-screen[data-page="knowledge"] .question-card { border-inline-start: 3px solid var(--accent); }
+.inner-screen[data-page="practical"] .view-panel > .panel:first-of-type { border-top: 3px solid var(--accent); }
+.assessment-dialog[open] { border-top: 4px solid var(--accent); }
+
+.inner-screen .chapter-index {
+  padding: 15px 12px; gap: 11px; border-color: #cbdcf1;
+  background: #eaf2fd; color: var(--ink);
+}
+.chapter-index h3 { padding: 0 4px; }
+.inner-screen .chapter-index .lesson { padding: 9px 12px; color: #233e60; background: transparent; border-color: transparent; line-height: 1.55; }
+.inner-screen .chapter-index .lesson-list { gap: 3px; }
+.inner-screen .chapter-index .lesson:hover { background: #f6faff; }
+.inner-screen .chapter-index .lesson.selected {
+  border-color: #9ebff3; background: #d7e7ff; color: #123e80; box-shadow: inset 3px 0 var(--accent);
+}
+.inner-screen .chapter-index .lesson .pill { margin: 0 0 3px; padding: 0; background: none; color: #526883; }
+.inner-screen .chapter-index .lesson small { color: #526883; margin-top: 3px; }
+.inner-screen .chapter-index .lesson.selected :is(.pill, small) { color: #2a5087; }
+.inner-screen .chapter-index details { margin: 0; border-color: #c5d7ec; padding: 10px; }
+.chapter-picker select.input { border-color: var(--accent); color: var(--accent); font-weight: 600; background-color: var(--wash); }
+.view-panel details.source-note { border: 0; padding: 0; margin: 14px 0 0; }
+.view-panel .source-note summary { color: #51677b; font-size: 12px; font-weight: 500; width: fit-content; }
+.source-note p, .source-note a { font-size: 13px; }

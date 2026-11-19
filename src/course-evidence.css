@@ -9,6 +9,13 @@
 .evidence-summary dd { margin: 0; font-weight: 600; color: var(--ink); }
 .evidence-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 .evidence-history { margin-top: 20px; }
+.elective-item, .elective-choice { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: #f8faff; }
+.elective-item h3 { margin: 10px 0 4px; }
+.elective-item p { margin: 0 0 12px; line-height: 1.65; }
+.elective-links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; color: var(--blue); }
+.elective-links button { border: 0; background: none; padding: 4px 0; color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.assessment-skills { list-style: none; margin: 0; padding: 0; }
+.assessment-skills li { padding: 7px 0; border-bottom: 1px solid var(--border); }
 .evidence-resource {
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
   width: 100%; text-align: left; padding: 13px; border: 1px solid var(--border); border-radius: 9px;
