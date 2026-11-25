@@ -184,10 +184,10 @@ export function getCompanionReply(query, context = {}, record = {}) {
   return { ...answer, scope };
 }
 
-export function appendVideoTakeaway(record, turnId, summary) {
+export function appendVideoTakeaway(record, turnId, summary, courseLessons = lessons) {
   const turn = record.tutoring.find(item => item.id === turnId);
   const text = summary.trim();
-  if (!text || !turn || turn.noted || !lessons.some(item => item.id === turn.lessonId)) return null;
+  if (!text || !turn || turn.noted || !courseLessons.some(item => item.id === turn.lessonId)) return null;
   const existing = record.videoNotes?.[turn.lessonId] || '';
   const next = [existing, text].filter(Boolean).join('\n');
   if (next.length > 3000) return null;

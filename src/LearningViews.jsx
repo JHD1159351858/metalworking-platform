@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { lessons, knowledge, loadRecord, saveRecord, loadRules, getSummary, downloadRecords } from './learning-data';
+import { lessonsForTrade, knowledge, loadRecord, saveRecord, loadRules, getSummary, downloadRecords } from './learning-data';
 import { unitLabel, feedbackLabel } from './cnc-course.js';
 import { Heading } from './LearningUI.jsx';
 import { PreAssessmentView, CourseFeedbackView, TeacherCourseEvidence } from './CourseEvidence.jsx';
@@ -7,6 +7,7 @@ import { PracticalView, TeacherPracticalReview } from './PracticalCourse.jsx';
 export { TeacherCourseSettings } from './PracticalCourse.jsx';
 import { TheoryLearning } from './TheoryLearning.jsx';
 import { PracticeLibrary } from './PracticeLibrary.jsx';
+import { WeldingView } from './WeldingView.jsx';
 import { LearningCenter } from './LearningCenter.jsx';
 import { MistakeNotebook } from './MistakeNotebook.jsx';
 
@@ -26,14 +27,15 @@ export function LearningView({ view, profile, trade, onNavigate, evidence, targe
   const record = { ...localRecord, ...evidence?.data };
   const props = { profile, trade, record, rules, update, onNavigate, evidence, target, onContextChange };
   let content;
-  if (['video', 'tutor', 'theory'].includes(view)) content = <TheoryLearning {...props} view={view} target={target} />;
+  if (trade.id === 'welding' && ['video', 'tutor', 'theory', 'practical', 'feedback', 'knowledge'].includes(view)) content = <WeldingView {...props} view={view} />;
+  else if (['video', 'tutor', 'theory'].includes(view)) content = <TheoryLearning {...props} view={view} target={target} />;
   else if (view === 'pre') content = record.preAssessment ? <PreAssessmentView {...props} />
     : <><Heading title="课前测评">填写进度会自动保留，可以随时继续。</Heading><button className="button" onClick={() => onNavigate('pre')}>继续填写课前测评</button></>;
   else if (view === 'feedback') content = <CourseFeedbackView {...props} />;
   else if (view === 'practical') content = <PracticalView {...props} />;
   else if (view === 'records') content = <RecordsView {...props} />;
   else if (view === 'knowledge') content = <KnowledgeView onNavigate={onNavigate} initialChapter={target?.chapterId} />;
-  else if (view === 'teacher') content = <><TeacherPracticalReview {...props} /><TeacherCourseEvidence record={record} /></>;
+  else if (view === 'teacher') content = <><TeacherPracticalReview {...props} /><TeacherCourseEvidence trade={trade} record={record} /></>;
   else content = <LearningCenter {...props} />;
   return <section className="view-panel" key={`${profile.id}-${trade.id}-${view}`}>{content}</section>;
 }
@@ -63,7 +65,7 @@ function RecordsOverview({ profile, trade, record, onNavigate }) {
     ...record.practice.map(p => ({ id: p.id, at: p.at, title: `巩固练习 · ${p.correct ? '正确' : '需补学'}`, detail: p.topic })),
     ...record.feedback.map(f => ({ id: f.id, at: f.at, title: `课程反馈 · ${f.type}`, detail: feedbackLabel(f.text) })),
   ].sort((a, b) => b.at.localeCompare(a.at));
-  return <><div className="stat-grid"><div className="stat"><span>视频完成</span><strong>{summary.videoCompleted} / {summary.videoTotal}</strong></div><div className="stat"><span>伴学与练习</span><strong>{record.tutoring.length + record.practice.length + (record.casePractice?.length || 0)} <small>次</small></strong></div><div className="stat"><span>理论测评</span><strong style={{fontSize:24}}>{summary.examPassed ? '已通过' : '待完成'}</strong></div><div className="stat"><span>实操状态</span><strong style={{fontSize:24}}>{summary.practicalStatus}</strong></div></div><div className="panel"><h3>视频学习明细</h3>{lessons.map(lesson => { const v = record.videos[lesson.id]; return <div className="record-row" key={lesson.id}><div><strong>{lesson.title}</strong><p className="muted">{v?.filename || '尚未载入本地视频'} · 实际观看 {Math.round(v?.watchedSeconds || 0)} 秒 · 继续位置 {Math.round(v?.position || 0)} 秒</p></div><span className="pill">{v?.completed ? '观看完成' : '未完成'}</span></div>; })}</div><div className="panel"><div className="row"><h3>学习历程</h3><button className="button secondary" onClick={() => downloadRecords(profile, trade, record)}>导出学习记录</button></div>{events.length ? events.map(e => <div className="record-row" key={e.id}><div><strong>{e.title}</strong><p className="muted">{e.detail}</p></div><time className="muted">{date(e.at)}</time></div>) : <div className="empty-state"><h2>你的学习旅程即将开始</h2><p>填写课前问卷、完成练习或提交反馈后，会在这里留下记录。</p><button className="button" onClick={() => onNavigate('pre')}>开始学习</button></div>}</div></>;
+  return <><div className="stat-grid"><div className="stat"><span>视频完成</span><strong>{summary.videoCompleted} / {summary.videoTotal}</strong></div><div className="stat"><span>伴学与练习</span><strong>{record.tutoring.length + record.practice.length + (record.casePractice?.length || 0)} <small>次</small></strong></div><div className="stat"><span>理论测评</span><strong style={{fontSize:24}}>{summary.examPassed ? '已通过' : '待完成'}</strong></div><div className="stat"><span>实操状态</span><strong style={{fontSize:24}}>{summary.practicalStatus}</strong></div></div><div className="panel"><h3>视频学习明细</h3>{lessonsForTrade(trade).map(lesson => { const v = record.videos[lesson.id]; return <div className="record-row" key={lesson.id}><div><strong>{lesson.title}</strong><p className="muted">{v?.filename || (lesson.src ? '课程视频' : '尚未载入本地视频')} · 实际观看 {Math.round(v?.watchedSeconds || 0)} 秒 · 继续位置 {Math.round(v?.position || 0)} 秒</p></div><span className="pill">{v?.completed ? '观看完成' : '未完成'}</span></div>; })}</div><div className="panel"><div className="row"><h3>学习历程</h3><button className="button secondary" onClick={() => downloadRecords(profile, trade, record)}>导出学习记录</button></div>{events.length ? events.map(e => <div className="record-row" key={e.id}><div><strong>{e.title}</strong><p className="muted">{e.detail}</p></div><time className="muted">{date(e.at)}</time></div>) : <div className="empty-state"><h2>你的学习旅程即将开始</h2><p>填写课前问卷、完成练习或提交反馈后，会在这里留下记录。</p><button className="button" onClick={() => onNavigate('pre')}>开始学习</button></div>}</div></>;
 }
 
 function KnowledgeView({ onNavigate, initialChapter }) {

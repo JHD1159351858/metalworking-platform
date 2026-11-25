@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 440" role="img" aria-labelledby="title desc">
+  <title id="title">低碳钢板对接平焊装配示意</title>
+  <desc id="desc">俯视图为两块同平面放置的矩形板，两条长边相对。每块板长160毫米、宽100毫米、厚3至4毫米。右侧是板厚和对接处的端视示意。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 8 4 0 8Z" fill="#315987"/>
+    </marker>
+    <pattern id="section" width="8" height="8" patternUnits="userSpaceOnUse">
+      <rect width="8" height="8" fill="#e4effc"/>
+      <path d="M-2 2 2-2M0 8 8 0M6 10 10 6" fill="none" stroke="#8aa9ce" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="840" height="440" fill="#f8fbff"/>
+  <g font-family="Microsoft YaHei, PingFang SC, sans-serif" fill="#183b60">
+    <text x="30" y="37" font-size="22" font-weight="bold">低碳钢板对接平焊</text>
+    <text x="810" y="36" text-anchor="end" font-size="15">尺寸单位：mm</text>
+    <path d="M30 54H810" stroke="#c7d8ed"/>
+    <text x="68" y="88" font-size="18" font-weight="bold">俯视</text>
+    <g fill="#dceafa" stroke="#365b86" stroke-width="2">
+      <rect x="120" y="110" width="143.75" height="230"/>
+      <rect x="272" y="110" width="143.75" height="230"/>
+    </g>
+    <g font-size="17" text-anchor="middle">
+      <text x="192" y="232">Q235</text><text x="344" y="232">Q235</text>
+    </g>
+    <g fill="none" stroke="#7791ad">
+      <path d="M113 110H77M113 340H77M120 348V388M263.75 348V388"/>
+    </g>
+    <g fill="none" stroke="#315987" marker-start="url(#arrow)" marker-end="url(#arrow)">
+      <path d="M85 111V339M121 377H263"/>
+    </g>
+    <text x="72" y="230" text-anchor="end" font-size="17">160</text>
+    <text x="192" y="369" text-anchor="middle" font-size="17">100</text>
+    <text x="500" y="88" font-size="18" font-weight="bold">端视</text>
+    <g fill="url(#section)" stroke="#365b86" stroke-width="2">
+      <rect x="500" y="206" width="98" height="18"/><rect x="607" y="206" width="98" height="18"/>
+    </g>
+    <g stroke="#7791ad" fill="none">
+      <path d="M713 206H746M713 224H746"/>
+      <path d="M603 201V166L630 146H724" stroke="#315987"/>
+    </g>
+    <text x="633" y="138" font-size="16">对接处</text>
+    <g stroke="#315987" marker-end="url(#arrow)">
+      <path d="M736 182V205M736 249V225"/>
+    </g>
+    <text x="752" y="222" font-size="17">3～4</text>
+    <text x="500" y="299" font-size="16">两块钢板放在同一平面。</text>
+    <text x="500" y="326" font-size="16">装配间隙按教师现场要求确认。</text>
+    <text x="30" y="416" font-size="14" fill="#526d8a">按课程任务尺寸绘制。端视图的板厚及间隙作放大示意。</text>
+  </g>
+</svg>

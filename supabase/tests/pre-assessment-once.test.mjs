@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import test from 'node:test';
+import { weldingQuestions } from '../../src/welding-assessment.js';
 
 const require = process.env.METALWORK_SQL_TEST_RUNTIME
   ? createRequire(resolve(process.env.METALWORK_SQL_TEST_RUNTIME, 'package.json'))
@@ -87,6 +88,28 @@ test('the first completed pre-assessment persists across retries and becomes rea
     await assert.rejects(() => db.query("update public.metalwork_pre_assessments set note = '教师改写'"), { code: '42501' });
     await signIn();
     await assert.rejects(rows, { code: '42501' });
+
+    await db.exec('reset role');
+    await db.exec(await readFile(new URL('../migrations/20261124000100_welding_assessment.sql', import.meta.url), 'utf8'));
+    await signIn(first);
+    assert.deepEqual(await rows(), [existing]);
+    const answers = Object.fromEntries(weldingQuestions.map(q => [q.id, String(q.answer)]));
+    function submitWelding(payload) {
+      return db.query(`insert into public.metalwork_pre_assessments
+        (user_id, trade_id, experience, confidence, focus, answers)
+        values ($1, 'welding', '第一次学习', '需要从基础开始', '焊接安全防护', $2)
+        on conflict (user_id, trade_id) do nothing returning score`, [first, JSON.stringify(payload)]);
+    }
+    for (const invalid of [correct, { ...answers, extra: '1' }, { ...answers, 'weld-safety-01': 1 }, { ...answers, 'weld-safety-01': '4' }]) {
+      await assert.rejects(() => submitWelding(invalid), { code: '23514' });
+    }
+    assert.equal((await submitWelding({ ...answers, 'weld-safety-04': '0' })).rows[0].score, 90);
+    assert.deepEqual((await submitWelding(answers)).rows, []);
+    assert.equal((await rows()).length, 2);
+    await db.query(`insert into public.metalwork_course_feedback (id, user_id, trade_id, type, text)
+      values ($1, $2, 'welding', '学习心得', '看完微课后更了解如何防护了。')`, [crypto.randomUUID(), first]);
+    await signIn(second);
+    assert.deepEqual(await rows(), [saved]);
   } finally {
     await db.close();
   }

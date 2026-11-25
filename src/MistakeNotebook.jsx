@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { weldingLessons, weldingQuestions } from './welding-course.js';
 import { unitLabel } from './cnc-course.js';
 import { gradeAttempt } from './learning-data.js';
 import { mistakeHistory } from './mistake-history.js';
@@ -24,11 +25,11 @@ function Recommendations({ items, onNavigate }) {
   </section>;
 }
 
-function MistakeItem({ item, onCorrect, onNavigate }) {
+function MistakeItem({ item, onCorrect, onNavigate, welding }) {
   const canRetry = !item.resolved && !item.caseId && item.questionId && item.options.includes(item.correctText);
   return <details className="notebook-question">
     <summary>
-      <span>{[item.source, item.chapterId && unitLabel(item.chapterId), `答错 ${item.wrongCount} 次`].filter(Boolean).join(' · ')}</span>
+      <span>{[item.source, item.chapterId && (welding ? weldingLessons.find(lesson => lesson.id === item.chapterId)?.title : unitLabel(item.chapterId)), `答错 ${item.wrongCount} 次`].filter(Boolean).join(' · ')}</span>
       <strong>{item.prompt}</strong>
     </summary>
     <p className="muted">知识点 · {item.topic}</p>
@@ -56,12 +57,12 @@ function MistakeItem({ item, onCorrect, onNavigate }) {
   </details>;
 }
 
-export function MistakeNotebook({ record, update, onNavigate }) {
+export function MistakeNotebook({ record, update, onNavigate, trade }) {
   const [resolved, setResolved] = useState(false);
   const [visible, setVisible] = useState(10);
   const [notice, setNotice] = useState('');
-  const mistakes = useMemo(() => mistakeHistory(record), [record]);
-  const recommendations = useMemo(() => recommendMistakeQuestions(mistakes, record), [mistakes, record]);
+  const mistakes = useMemo(() => mistakeHistory(record, trade), [record, trade]);
+  const recommendations = useMemo(() => recommendMistakeQuestions(mistakes, record, 10, trade?.id === 'welding' ? weldingQuestions : undefined), [mistakes, record, trade]);
   const pendingCount = mistakes.filter(item => !item.resolved).length;
   const filtered = mistakes.filter(item => item.resolved === resolved);
 
@@ -90,7 +91,7 @@ export function MistakeNotebook({ record, update, onNavigate }) {
             onClick={() => { setResolved(value); setVisible(10); setNotice(''); }}>{label}（{count}）</button>)}</div>
       </header>
       {notice && <p role="status">{notice}</p>}
-      {filtered.slice(0, visible).map(item => <MistakeItem key={item.key} item={item} onCorrect={correct} onNavigate={onNavigate} />)}
+      {filtered.slice(0, visible).map(item => <MistakeItem welding={trade?.id === 'welding'} key={item.key} item={item} onCorrect={correct} onNavigate={onNavigate} />)}
       {!filtered.length && <p className="muted">{resolved ? '还没有已订正的题目。' : '当前错题已全部订正。'}</p>}
       {visible < filtered.length && <button type="button" className="button ghost" onClick={() => setVisible(visible + 10)}>显示更多错题</button>}
     </section>

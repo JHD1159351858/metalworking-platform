@@ -1,20 +1,22 @@
 import { useEffect, useState } from 'react';
 import { getSupabase, hasCloud, platformCloud } from './lib/supabase.js';
+import { literacyQuestions } from './literacy-questions.js';
+import { weldingQuestions } from './welding-assessment.js';
 
 export const profileFields = 'user_id,display_name,student_number,class_name,role';
 const assessmentFields = 'user_id,experience,confidence,focus,note,answers,updated_at' + (platformCloud ? '' : ',score');
 const feedbackFields = 'id,user_id,type,text,created_at';
 
-const literacyExpected = { safety: '0', drawing: '1', program: '2' };
-function scoreOf(answers) {
-  const keys = Object.keys(literacyExpected);
-  const correct = keys.filter(key => answers?.[key] === literacyExpected[key]).length;
-  return Math.round((correct / keys.length) * 100);
+function scoreOf(answers, tradeId) {
+  const questions = tradeId === 'welding' ? weldingQuestions : literacyQuestions;
+  const correct = questions.filter(q => answers?.[q.id] === String(q.answer)).length;
+  return Math.round((correct / questions.length) * 100);
 }
 
-const mapAssessment = row => row ? ({
+const mapAssessment = (row, tradeId) => row ? ({
+  tradeId,
   experience: row.experience, confidence: row.confidence, focus: row.focus, note: row.note,
-  answers: row.answers, score: platformCloud ? scoreOf(row.answers) : row.score, at: row.updated_at,
+  answers: row.answers, score: platformCloud ? scoreOf(row.answers, tradeId) : row.score, at: row.updated_at,
 }) : null;
 const mapFeedback = row => ({ id: row.id, type: row.type, text: row.text, at: row.created_at });
 
@@ -41,7 +43,7 @@ async function readStudentEvidence(accountId, tradeId) {
     listAll(() => getSupabase().from('metalwork_course_feedback').select(feedbackFields)
       .eq('user_id', accountId).eq('trade_id', tradeId).order('created_at').order('id'), errorMessage),
   ]);
-  return { preAssessment: mapAssessment(unwrap(assessment, errorMessage)), feedback: feedback.map(mapFeedback) };
+  return { preAssessment: mapAssessment(unwrap(assessment, errorMessage), tradeId), feedback: feedback.map(mapFeedback) };
 }
 
 export function useCloudEvidence(accountId, tradeId) {
@@ -77,7 +79,7 @@ export function useCloudEvidence(accountId, tradeId) {
       .upsert(row, { onConflict: 'user_id,trade_id', ignoreDuplicates: true }), message);
     const result = await getSupabase().from('metalwork_pre_assessments').select(assessmentFields)
       .eq('user_id', accountId).eq('trade_id', tradeId).single();
-    const saved = mapAssessment(unwrap(result, message));
+    const saved = mapAssessment(unwrap(result, message), tradeId);
     updateData(data => ({ ...data, preAssessment: saved }));
     return saved;
   }
@@ -119,7 +121,7 @@ export async function readClassEvidence(tradeId) {
       .eq('trade_id', tradeId).order('created_at').order('id'), message),
   ]);
 
-  const assessmentByStudent = new Map(assessments.map(row => [row.user_id, mapAssessment(row)]));
+  const assessmentByStudent = new Map(assessments.map(row => [row.user_id, mapAssessment(row, tradeId)]));
   const feedbackByStudent = new Map();
   for (const row of feedback) {
     if (!feedbackByStudent.has(row.user_id)) feedbackByStudent.set(row.user_id, []);

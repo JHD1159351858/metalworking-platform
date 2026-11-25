@@ -14,12 +14,12 @@ export function chapterActivity(chapterId, caseId) {
   return { view: 'tutor', target: { chapterId, activity: 'case', ...(caseId ? { caseId } : {}) } };
 }
 
-export function theoryProgress(record) {
-  const videos = lessons.map(lesson => record.videos?.[lesson.id] || {});
+export function theoryProgress(record, courseLessons = lessons, chapters = cncChapters) {
+  const videos = courseLessons.map(lesson => record.videos?.[lesson.id] || {});
   return {
     videosCompleted: videos.filter(item => item.completed).length,
     watchedSeconds: Math.round(videos.reduce((total, item) => total + (item.watchedSeconds || 0), 0)),
-    chaptersRead: cncChapters.filter(ch => record.completedChapters?.[ch.id]).length,
+    chaptersRead: chapters.filter(ch => record.completedChapters?.[ch.id]).length,
   };
 }
 

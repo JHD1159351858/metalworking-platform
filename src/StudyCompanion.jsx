@@ -3,6 +3,8 @@ import { ChatCircleDots, PaperPlaneRight, X } from '@phosphor-icons/react';
 import { knowledge, lessons, loadRecord, saveRecord } from './learning-data.js';
 import { cncChapters, unitLabel } from './cnc-course.js';
 import { appendVideoTakeaway, conversationScope, getCompanionReply, getStarters, reviewPrompt } from './companion-guidance.js';
+import { weldingGuidance, weldingStarters } from './welding-guidance.js';
+import { weldingLessons } from './welding-course.js';
 import { stageLabels } from './companion-stages.js';
 import './study-companion.css';
 
@@ -26,7 +28,11 @@ function timeLabel(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return '';
   return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 }
-function locationLabel(context) {
+function locationLabel(context, welding) {
+  if (welding) {
+    const item = weldingLessons.find(lesson => lesson.id === (context.lessonId || context.chapterId));
+    return item ? [item.title, timeLabel(context.videoTime)].filter(Boolean).join(' · ') : stageLabels[context.view] || '';
+  }
   const chapter = context.chapterId && (cncChapters.find(c => c.id === context.chapterId)?.id || knowledge.find(k => k.id === context.chapterId)?.chapter);
   const lesson = lessons.find(l => l.id === context.lessonId);
   if (lesson) return [lesson.title, timeLabel(context.videoTime)].filter(Boolean).join(' · ');
@@ -47,6 +53,7 @@ function SourceExcerpt({ source }) {
 }
 
 export function StudyCompanion({ profile, trade, context = emptyContext, inline = false }) {
+  const welding = trade.id === 'welding';
   const [wide, setWide] = useState(() => window.matchMedia('(min-width: 900px)').matches);
   const [open, setOpen] = useState(false);
   const docked = inline && wide;
@@ -73,11 +80,13 @@ export function StudyCompanion({ profile, trade, context = emptyContext, inline 
     const text = question.trim().slice(0, 3000);
     if (!text) return;
     const record = loadRecord(profile, trade);
-    const guidance = getCompanionReply(text, current, record);
+    const guidance = welding
+      ? { ...weldingGuidance(text, current, record), scope: conversationScope(current) }
+      : getCompanionReply(text, current, record);
     if (!guidance) return;
     const turn = {
       id: crypto.randomUUID(), at: new Date().toISOString(), query: text, ...guidance,
-      location: locationLabel(current), lessonId: current.lessonId, chapterId: current.chapterId,
+      location: locationLabel(current, welding), lessonId: current.lessonId, chapterId: current.chapterId,
       videoTime: current.videoTime,
     };
     const tutoring = [...record.tutoring, turn];
@@ -95,7 +104,7 @@ export function StudyCompanion({ profile, trade, context = emptyContext, inline 
     setNoteId(null);
     setMessage('');
     input.current?.focus({ preventScroll: true });
-  }, [profile, trade, context]);
+  }, [profile, trade, context, welding]);
 
   useEffect(() => {
     const receive = event => {
@@ -129,7 +138,7 @@ export function StudyCompanion({ profile, trade, context = emptyContext, inline 
   }
   function saveNote() {
     if (context.examActive) return;
-    const next = appendVideoTakeaway(loadRecord(profile, trade), noteId, summary);
+    const next = appendVideoTakeaway(loadRecord(profile, trade), noteId, summary, welding ? weldingLessons : lessons);
     if (!next) { setMessage('请填写要点，并确认该节笔记在 3000 字以内。'); return; }
     try {
       saveRecord(profile, trade, next);
@@ -139,9 +148,9 @@ export function StudyCompanion({ profile, trade, context = emptyContext, inline 
     } catch { setMessage('笔记保存失败，请稍后重试。'); }
   }
 
-  const starters = getStarters(context);
+  const starters = welding ? weldingStarters(context) : getStarters(context);
   const visibleHistory = context.view === 'pre' ? history.filter(turn => turn.scope === conversationScope(context)) : history;
-  if (visible && !context.examActive && !stageLabels[context.view] && !context.lessonId && !context.chapterId &&
+  if (!welding && visible && !context.examActive && !stageLabels[context.view] && !context.lessonId && !context.chapterId &&
       loadRecord(profile, trade).attempts.length) starters.unshift(reviewPrompt);
   return (
     <div className={docked ? 'study-companion companion-docked' : 'study-companion'} onKeyDown={event => {
@@ -153,7 +162,7 @@ export function StudyCompanion({ profile, trade, context = emptyContext, inline 
             <CompanionAvatar />
             <div>
               <h2 id={`${panelId}-title`}>{inline ? 'AI 伴学' : '智能伴学'}</h2>
-              <p>{context.examActive ? '综合测评作答中' : (locationLabel(context) || trade.name)}</p>
+              <p>{context.examActive ? '综合测评作答中' : (locationLabel(context, welding) || trade.name)}</p>
             </div>
             {!docked && <button type="button" className="companion-close" aria-label="关闭伴学窗口" onClick={close}><X size={19} /></button>}
           </header>

@@ -41,8 +41,8 @@ export function TheoryLearning({ view, record, rules, update, onNavigate, target
 
 const videoChapters = { intro: '8.2', safety: '8.2', process: '8.3', program: '8.4' };
 
-function VideoView({ record, update, onNavigate, initialLesson, onContextChange }) {
-  const [selected, setSelected] = useState(() => lessons.find(lesson => lesson.id === initialLesson) || lessons[0]);
+export function VideoView({ record, update, onNavigate, initialLesson, onContextChange, courseLessons = lessons }) {
+  const [selected, setSelected] = useState(() => courseLessons.find(lesson => lesson.id === initialLesson) || courseLessons[0]);
   const [source, setSource] = useState('');
   const [message, setMessage] = useState('');
   const picker = useRef(null);
@@ -52,13 +52,15 @@ function VideoView({ record, update, onNavigate, initialLesson, onContextChange 
   const accumulated = useRef(0);
   useEffect(() => () => { if (source) URL.revokeObjectURL(source); }, [source]);
   const progress = record.videos[selected.id] || {};
-  const chapterId = videoChapters[selected.id];
+  const chapterId = videoChapters[selected.id] || selected.id;
   const videoTime = Math.floor(progress.position || 0);
   useEffect(() => {
     onContextChange?.({ chapterId, lessonId: selected.id, videoTime });
   }, [chapterId, selected.id, videoTime, onContextChange]);
   function chooseLesson(lesson) {
     tick(true);
+    lastTick.current = 0;
+    accumulated.current = 0;
     setSelected(lesson);
     setSource('');
     setMessage('');
@@ -89,7 +91,7 @@ function VideoView({ record, update, onNavigate, initialLesson, onContextChange 
     update(r => {
       const old = r.videos[selected.id] || {};
       const watchedSeconds = Math.min(duration, (old.watchedSeconds || 0) + watched);
-      const entry = { ...old, position: currentTime, duration, watchedSeconds, completed: watchedSeconds >= duration * .9, updatedAt: stamp() };
+      const entry = { ...old, ...(selected.src && { filename: selected.title }), position: currentTime, duration, watchedSeconds, completed: watchedSeconds >= duration * .9, updatedAt: stamp() };
       return { ...r, videos: { ...r.videos, [selected.id]: entry } };
     });
   }
@@ -114,8 +116,9 @@ function VideoView({ record, update, onNavigate, initialLesson, onContextChange 
     <div className="video-workspace">
       <section className="panel stack">
         <div className="video-stage">
-          {source ? (
-            <video ref={player} controls src={source} onLoadedMetadata={e => {
+          {(selected.src || source) ? (
+            <video key={selected.id} ref={player} controls playsInline preload="metadata" aria-label={selected.title} src={selected.src || source}
+              onError={() => setMessage('视频暂时无法播放，请检查网络并刷新重试。')} onLoadedMetadata={e => {
               const position = progress.position || 0;
               const video = e.currentTarget;
               if (position < video.duration) video.currentTime = position;
@@ -130,7 +133,7 @@ function VideoView({ record, update, onNavigate, initialLesson, onContextChange 
             </div>
           )}
         </div>
-        <input ref={picker} type="file" accept="video/*" onChange={e => { chooseFile(e.target.files?.[0]); e.target.value = ''; }} hidden aria-label="本地视频文件" />
+        {!selected.src && <input ref={picker} type="file" accept="video/*" onChange={e => { chooseFile(e.target.files?.[0]); e.target.value = ''; }} hidden aria-label="本地视频文件" />}
         {source && <div><button className="button ghost" onClick={() => picker.current?.click()}>更换本地视频</button></div>}
         {message && <p className="muted" role="status">{message}</p>}
         <div className="row video-progress-label">
@@ -153,12 +156,12 @@ function VideoView({ record, update, onNavigate, initialLesson, onContextChange 
       </aside>
     </div>
     <section className="panel stack">
-      <h3>学习目录 <span className="muted">{lessons.length} 节</span></h3>
+      <h3>学习目录 <span className="muted">{courseLessons.length} 节</span></h3>
       <div className="lesson-list video-lesson-list">
-        {lessons.map((lesson, i) => (
+        {courseLessons.map((lesson, i) => (
           <button key={lesson.id} className={`lesson ${selected.id === lesson.id ? 'selected' : ''}`}
             aria-pressed={selected.id === lesson.id} onClick={() => { if (lesson.id !== selected.id) chooseLesson(lesson); }}>
-            <span className="pill">0{i + 1}</span>
+            <span className="pill">{lesson.elective ? '选学' : lesson.src ? '预习' : '0' + (i + 1)}</span>
             <span><strong>{lesson.title}</strong>{record.videos[lesson.id]?.filename &&
               <small>{record.videos[lesson.id].completed ? '已看完' : '学习中'}</small>}</span>
           </button>

@@ -1,3 +1,5 @@
+import { weldingLessons, weldingReady } from './welding-course.js';
+
 export const lessons = [
   { id: 'intro', title: '课程导入与设备认知', topic: '认识数控车实训', duration: '待配置', summary: '了解实训目标、数控车床的基本组成，以及本课程的学习顺序。正式视频与设备资料由教师提供。' },
   { id: 'safety', title: '实训安全与操作规范', topic: '先安全，后操作', duration: '待配置', summary: '进入实训场地前，先学习本校、本机床的安全要求；设备运行和异常处置均应服从现场教师指导。' },
@@ -103,9 +105,14 @@ export function readLocalStudents(trade) {
     return { profile, record };
   });
 }
+export function lessonsForTrade(trade) {
+  return trade?.id === 'welding' ? weldingLessons : lessons;
+}
+
 export function loadRules(trade) {
-  try { return { ...defaultRules, ...JSON.parse(localStorage.getItem(`metalwork:rules:v1:${trade.id}`) || 'null') }; }
-  catch { return { ...defaultRules }; }
+  const defaults = trade.id === 'welding' ? { ...defaultRules, task: '低碳钢板对接平焊' } : defaultRules;
+  try { return { ...defaults, ...JSON.parse(localStorage.getItem(`metalwork:rules:v1:${trade.id}`) || 'null') }; }
+  catch { return { ...defaults }; }
 }
 export function saveRules(trade, rules) {
   localStorage.setItem(`metalwork:rules:v1:${trade.id}`, JSON.stringify(rules));
@@ -113,7 +120,7 @@ export function saveRules(trade, rules) {
 }
 export function getSummary(profile, trade) {
   const r = loadRecord(profile, trade);
-  return { videoCompleted: Object.values(r.videos).filter(v => v.completed).length, videoTotal: lessons.length, examPassed: r.attempts.some(a => a.passed), attempts: r.attempts.length, practicalStatus: r.submissions.at(-1)?.status || '未提交' };
+  return { videoCompleted: Object.values(r.videos).filter(v => v.completed).length, videoTotal: lessonsForTrade(trade).length, examPassed: r.attempts.some(a => a.passed), attempts: r.attempts.length, practicalStatus: r.submissions.at(-1)?.status || '未提交' };
 }
 export const courseSteps = [
   { id: 'pre', title: '课前测评', image: 'exam', description: ['完成素养测评和调查问卷', '了解已有基础与学习需求'], action: '进入测评' },
@@ -122,13 +129,14 @@ export const courseSteps = [
   { id: 'feedback', title: '智能选学及课程反馈', image: 'tutor', description: ['按学习情况选内容复习', '分享心得或给课程提建议'], action: '选学与反馈' },
 ];
 
-export function getCoursePath(record) {
+export function getCoursePath(record, trade) {
   const passed = record.attempts.some(attempt => attempt.passed);
   const practicalStatus = record.submissions.at(-1)?.status;
+  const ready = trade?.id === 'welding' ? weldingReady(record) : passed;
   const progress = [
     { status: record.preAssessment ? '课前测评与问卷已填写' : '待填写', complete: Boolean(record.preAssessment) },
     { status: passed ? '理论测评已达标' : record.attempts.length ? `已练习 ${record.attempts.length} 次 · 可继续巩固` : '待学习与练习', complete: passed },
-    { status: passed ? practicalStatus || '待提交材料' : '可先自查 · 达标后提交', locked: !passed, complete: practicalStatus === '通过' },
+    { status: ready ? practicalStatus || '待提交材料' : '可先自查 · 达标后提交', locked: !ready, complete: practicalStatus === '通过' },
     { status: record.feedback.length ? '已记录课程反馈' : '查看选学建议', complete: record.feedback.length > 0 },
   ];
   return courseSteps.map((step, index) => ({ ...step, ...progress[index], index: `0${index + 1}` }));

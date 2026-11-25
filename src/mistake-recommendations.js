@@ -33,10 +33,10 @@ function unitVector(counts, idf) {
   return vector;
 }
 
-let cachedIndex;
-function bankIndex() {
-  if (cachedIndex) return cachedIndex;
-  const rows = cncPracticeQuestions.map(question => ({ question, counts: termCounts(question) }));
+const bankIndexes = new WeakMap();
+function bankIndex(bank) {
+  if (bankIndexes.has(bank)) return bankIndexes.get(bank);
+  const rows = bank.map(question => ({ question, counts: termCounts(question) }));
   const idf = new Map();
   for (const { counts } of rows) {
     for (const term of counts.keys()) idf.set(term, (idf.get(term) || 0) + 1);
@@ -50,8 +50,9 @@ function bankIndex() {
       template: question.prompt.replace(/[+−-]?\d+(?:\.\d+)?/g, '#'),
     });
   }
-  cachedIndex = { idf, byChapter };
-  return cachedIndex;
+  const index = { idf, byChapter };
+  bankIndexes.set(bank, index);
+  return index;
 }
 
 function similarity(a, b) {
@@ -60,11 +61,11 @@ function similarity(a, b) {
   return dot;
 }
 
-export function recommendMistakeQuestions(mistakes, record, limit = 10) {
+export function recommendMistakeQuestions(mistakes, record, limit = 10, bank = cncPracticeQuestions) {
   const pending = mistakes.filter(item => !item.resolved && item.chapterId && item.topic)
     .sort((a, b) => b.wrongCount - a.wrongCount || String(b.lastWrongAt || '').localeCompare(String(a.lastWrongAt || '')));
   if (!pending.length || limit <= 0) return [];
-  const { idf, byChapter } = bankIndex();
+  const { idf, byChapter } = bankIndex(bank);
   const lastAnswers = new Map();
   const rounds = [...(record.practice || []), ...(record.attempts || [])]
     .sort((a, b) => String(a.at || '').localeCompare(String(b.at || '')));

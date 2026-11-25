@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { ArrowClockwise, ArrowRight, ChalkboardTeacher, ChartBar, ClipboardText, Gauge, SignOut, Users, ChatCircleText } from '@phosphor-icons/react';
-import { lessons } from './learning-data.js';
+import { weldingLessons } from './welding-course.js';
+import { weldingFocus } from './welding-assessment.js';
+import { lessonsForTrade } from './learning-data.js';
 import { coordinateClassSummary } from './course-recommendations.js';
 import { cncChapters, unitLabel, feedbackLabel } from './cnc-course.js';
 import './teacher-dashboard.css';
@@ -26,16 +28,17 @@ function BarChart({ title, rows, total, unit, description }) {
   </section>;
 }
 
-function ClassFeedback({ students }) {
+function ClassFeedback({ students, welding }) {
   const [chapter, setChapter] = useState('');
   const entries = students.flatMap(({ profile, record }) => (record.feedback || []).map(entry => ({ ...entry, student: profile.name })));
   if (!entries.length) return null;
-  const matches = entries.filter(entry => !chapter || entry.text.startsWith('【第 ' + chapter + ' 节】'))
+  const chapters = welding ? weldingLessons : cncChapters;
+  const matches = entries.filter(entry => !chapter || (welding ? entry.text.startsWith('【' + chapters.find(c => c.id === chapter)?.title + '】') : entry.text.startsWith('【第 ' + chapter + ' 节】')))
     .sort((a,b) => String(b.at).localeCompare(String(a.at)));
   return <details className="teacher-settings">
     <summary>按章节查看班级反馈 · {entries.length} 条</summary>
     <div className="panel stack"><label className="field">反馈范围<select className="input" value={chapter} onChange={e => setChapter(e.target.value)}>
-      <option value="">全部反馈</option>{cncChapters.map(ch => <option key={ch.id} value={ch.id}>{unitLabel(ch.id)} · {ch.title}</option>)}
+      <option value="">全部反馈</option>{chapters.map(ch => <option key={ch.id} value={ch.id}>{welding ? ch.title : unitLabel(ch.id) + ' · ' + ch.title}</option>)}
     </select></label>
     {matches.length ? matches.map(entry => <article key={entry.id} className="record-row"><div><strong>{entry.student} · {entry.type}</strong>
       <p className="evidence-text">{feedbackLabel(entry.text)}</p></div></article>) : <p>本节还没有课程反馈。</p>}
@@ -43,12 +46,12 @@ function ClassFeedback({ students }) {
   </details>;
 }
 
-function TeacherOverview({ students, cloud }) {
+function TeacherOverview({ students, cloud, welding }) {
   const submitted = students.filter(student => student.record.preAssessment);
   const scores = submitted.map(student => student.record.preAssessment.score).filter(Number.isFinite);
   const average = scores.length ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : '—';
   const respondents = students.filter(student => student.record.feedback?.length).length;
-  const coordinates = !cloud && coordinateClassSummary(students);
+  const coordinates = !welding && !cloud && coordinateClassSummary(students);
   const feedbackCount = students.reduce((total, student) => total + (student.record.feedback?.length || 0), 0);
   const progress = [
     { label: '课前测评已提交', count: submitted.length },
@@ -58,7 +61,7 @@ function TeacherOverview({ students, cloud }) {
     ] : []),
     { label: '已反馈课程', count: respondents },
   ];
-  const topics = focusOptions.map(label => ({
+  const topics = (welding ? weldingFocus : focusOptions).map(label => ({
     label, count: submitted.filter(student => student.record.preAssessment.focus === label).length,
   }));
   const cards = [
@@ -88,7 +91,8 @@ function TeacherOverview({ students, cloud }) {
   </>;
 }
 
-function RosterTable({ students, cloud, selectedId, onSelect }) {
+function RosterTable({ students, cloud, selectedId, onSelect, trade }) {
+  const lessons = lessonsForTrade(trade);
   return <div className="teacher-table-scroll">
     <table className="teacher-table">
       <caption className="teacher-sr-only">当前筛选范围内的学生与学习进度</caption>
@@ -131,7 +135,7 @@ function RosterTable({ students, cloud, selectedId, onSelect }) {
 }
 
 export function TeacherDashboard({
-  students = noStudents, trade, profile, scopeLabel, cloud, loading, error, onRefresh, onExit, renderStudent, children,
+  students = noStudents, trade, trades, onTradeChange, profile, scopeLabel, cloud, loading, error, onRefresh, onExit, renderStudent, children,
 }) {
   const [classFilter, setClassFilter] = useState('');
   const [search, setSearch] = useState('');
@@ -155,13 +159,16 @@ export function TeacherDashboard({
           </div>
         </div>
         <div className="teacher-screen-actions">
+          {trades && <label className="teacher-trade-picker">实习工种 <select className="input" value={trade.id} onChange={e => onTradeChange(trades.find(t => t.id === e.target.value))}>
+            {trades.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select></label>}
           {onRefresh && <button className="teacher-screen-button" type="button" onClick={onRefresh} disabled={loading}><ArrowClockwise size={17} aria-hidden="true" /> 刷新数据</button>}
           {onExit && <button className="teacher-screen-button" type="button" onClick={onExit}><SignOut size={17} aria-hidden="true" />{cloud ? '退出登录' : '退出教师端'}</button>}
         </div>
       </header>
       {!ready ? <p className="teacher-screen-message" role={error ? 'alert' : 'status'}>
         {error ? '未能读取班级数据，请刷新重试。' : '正在读取学生数据…'}
-      </p> : scope.length > 0 ? <TeacherOverview students={scope} cloud={cloud} />
+      </p> : scope.length > 0 ? <TeacherOverview students={scope} cloud={cloud} welding={trade?.id === 'welding'} />
         : <p className="teacher-screen-message" role="status">当前范围内暂无学生记录。</p>}
       {cloud && ready && <p className="teacher-source">云端汇总课前问卷与课程反馈。视频、理论练习及实操记录保存在学生端。</p>}
     </section>
@@ -183,7 +190,7 @@ export function TeacherDashboard({
           </>}
         </div>}
       </div>
-      {matches.length ? <RosterTable students={matches} cloud={cloud} selectedId={selectedId} onSelect={setSelectedId} />
+      {matches.length ? <RosterTable trade={trade} students={matches} cloud={cloud} selectedId={selectedId} onSelect={setSelectedId} />
         : <p className="teacher-roster-empty">{students.length ? '没有匹配的学生，请调整搜索条件。' : (cloud ? '当前班级还未分配学生账号。' : '学生选择学习身份后会显示在这里。')}</p>}
     </section>}
     {ready && selected && renderStudent && <section className="teacher-student-detail" aria-labelledby="teacher-student-title">
@@ -193,7 +200,7 @@ export function TeacherDashboard({
       </header>
       {renderStudent(selected)}
     </section>}
-    {ready && <ClassFeedback students={scope} />}
+    {ready && <ClassFeedback welding={trade?.id === 'welding'} students={scope} />}
     {children}
   </div>;
 }

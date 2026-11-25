@@ -1,6 +1,8 @@
 import { answerIndex, knowledge, questions } from './learning-data.js';
 import { cncAssessmentQuestions, cncPracticeQuestions } from './cnc-course.js';
 import { chapterCases, checkCoordinate, coordinateFigure, recordedCaseId, recordedCaseRound } from './case-exercises.js';
+import { weldingQuestions as weldingPreQuestions } from './welding-assessment.js';
+import { weldingQuestions, weldingAssessmentQuestions } from './welding-course.js';
 import { literacyQuestions } from './literacy-questions.js';
 
 const examReferences = {
@@ -12,7 +14,8 @@ const questionBank = new Map([
     const [chapterId, reference] = examReferences[q.id];
     return { ...q, chapterId, explanation: knowledge.find(item => item.id === reference)?.content };
   }),
-  ...cncAssessmentQuestions, ...cncPracticeQuestions,
+  ...cncAssessmentQuestions, ...cncPracticeQuestions, ...weldingQuestions, ...weldingAssessmentQuestions,
+  ...weldingPreQuestions.map(q => ({ ...q, category: '安全知识' })),
   ...literacyQuestions.map(q => ({ ...q, id: 'pre-' + q.id, category: q.id === 'safety' ? '安全知识' : '素养测评' })),
 ].map(q => [q.id, q]));
 
@@ -40,14 +43,15 @@ function caseContent(entry) {
     correctText: exercise.options[exercise.correctIndex], explanation: exercise.feedback };
 }
 
-export function mistakeHistory(record) {
+export function mistakeHistory(record, trade) {
   const mistakes = new Map();
   const events = [];
   const pre = record.preAssessment;
   if (pre) {
-    for (const q of literacyQuestions) {
+    const welding = (trade?.id || pre.tradeId) === 'welding';
+    for (const q of welding ? weldingPreQuestions : literacyQuestions) {
       const selectedIndex = answerIndex(pre.answers?.[q.id], q.options);
-      if (selectedIndex !== null) events.push({ id: 'pre-' + q.id, at: pre.at, source: '课前测评',
+      if (selectedIndex !== null) events.push({ id: welding ? q.id : 'pre-' + q.id, at: pre.at, source: '课前测评',
         correct: selectedIndex === q.answer, selectedIndex });
     }
   }

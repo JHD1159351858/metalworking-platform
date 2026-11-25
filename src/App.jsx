@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Gear, GearSix, Bell, CaretDown, ArrowRight, CaretRight, Stack, SquaresFour, X, ChalkboardTeacher, UserCircle, Info } from '@phosphor-icons/react';
 import { LearningView } from './LearningViews.jsx';
+import { TradeIcon } from './TradeIcon.jsx';
 import { HomeDashboard } from './HomeDashboard.jsx';
 import { GuestAccess } from './GuestAccess.jsx';
 import { StartupAnimation } from './GuestHome.jsx';
@@ -18,6 +19,7 @@ import './course-colors.css';
 
 const trades = [
   { id: 'lathe', name: '数控车', open: true },
+  { id: 'welding', name: '焊接', open: true },
   { id: 'milling', name: '数控铣' },
   { id: 'wire', name: '线切割' },
   { id: 'turning', name: '普通车' },
@@ -75,7 +77,7 @@ export function App() {
 
   return <>
     {cloudRequested ? <CloudGate renderGuest={renderGuest}>{(account, signOut) => {
-      if (account.role === 'teacher') return <CloudTeacherWorkspace key={account.id} profile={account} trade={trades[0]}
+      if (account.role === 'teacher') return <CloudTeacherWorkspace key={account.id} profile={account} trades={trades.filter(t => t.open)}
         onSignOut={signOut} initialPassword={teacherPassword} onPasswordUsed={clearTeacherPassword} />;
       if (teacherPassword) return <main className="app">
         <div className="modal-backdrop"><section className="modal" aria-labelledby="teacher-role-title">
@@ -146,7 +148,7 @@ function LocalApp() {
       setLoginError('暂时无法退出登录，请稍后重试。');
     }
   }
-  if (teacherRoute && teacherUnlocked) return <LocalTeacherWorkspace trade={trades[0]} onExit={goHome} />;
+  if (teacherRoute && teacherUnlocked) return <LocalTeacherWorkspace trades={trades.filter(t => t.open)} onExit={goHome} />;
   if (account && !teacherRoute) return <Workspace account={account} local onSignOut={signOut} error={loginError} />;
   return <GuestAccess key={teacherRoute ? 'teacher' : 'guest'} trades={trades}
     initialMode={teacherRoute ? 'teacher' : route !== 'home' ? 'login' : undefined}
@@ -170,7 +172,15 @@ function Workspace({ account, onSignOut, local, error }) {
   const [view, setView] = useState(studentView);
   const [studyTarget, setStudyTarget] = useState(null);
   const [studyContext, setStudyContext] = useState(null);
-  const [trade, setTrade] = useState(trades[0]);
+  const tradeKey = 'metalwork:active-trade:' + encodeURIComponent(account?.id || 'local');
+  const [trade, setTrade] = useState(() => {
+    const id = sessionStorage.getItem('metalwork:requested-trade') || sessionStorage.getItem(tradeKey);
+    return trades.find(t => t.id === id) || trades[0];
+  });
+  useEffect(() => {
+    sessionStorage.setItem(tradeKey, trade.id);
+    sessionStorage.removeItem('metalwork:requested-trade');
+  }, [tradeKey, trade.id]);
   const [profile, setProfile] = useState(() => account || readProfile());
   const cloud = Boolean(account && !local);
   const evidence = useCloudEvidence(cloud && trade.open ? account.id : undefined, trade.id);
@@ -189,7 +199,7 @@ function Workspace({ account, onSignOut, local, error }) {
   const showTheoryChat = theoryScreen && assessmentReady;
   const assessmentOpen = assessmentPrompt?.scope === assessmentScope ? assessmentPrompt.open : !localRecord.preAssessmentDraft?.dismissed;
   const showAssessment = trade.open && view !== 'teacher' && identityReady && assessmentReady && !preAssessment && assessmentOpen;
-  const companionContext = showAssessment ? { view: 'pre' } : view === 'feedback'
+  const companionContext = showAssessment ? { view: 'pre' } : view === 'feedback' && trade.id !== 'welding'
     ? { view, suggestions: courseSuggestions({ ...localRecord, ...evidence.data }) }
     : ['video', 'tutor', 'theory'].includes(view) ? { ...studyContext, view } : { view };
   useEffect(() => {
@@ -288,7 +298,7 @@ function Workspace({ account, onSignOut, local, error }) {
       <div className="app-layout">
         <aside className="trade-sidebar" aria-label="工种选择">
           <h2><Stack weight="duotone" /> 实习工种</h2>
-          <div className="trade-list">{trades.map(t => <button key={t.id} className={`trade-button ${trade.id === t.id ? 'selected' : ''}`} aria-pressed={trade.id === t.id} onClick={() => { setTrade(t); navigate('home'); }}><img src={`/assets/trade-${t.id}.png`} className="trade-icon" alt="" /><span>{t.name}</span>{trade.id === t.id ? <CaretRight className="trade-chevron" weight="bold" /> : !t.open && <span className="trade-state">待开放</span>}</button>)}
+          <div className="trade-list">{trades.map(t => <button key={t.id} className={`trade-button ${trade.id === t.id ? 'selected' : ''}`} aria-pressed={trade.id === t.id} onClick={() => { setTrade(t); navigate('home'); }}><TradeIcon trade={t} className="trade-icon" /><span>{t.name}</span>{trade.id === t.id ? <CaretRight className="trade-chevron" weight="bold" /> : !t.open && <span className="trade-state">待开放</span>}</button>)}
           <button className="trade-button more-trades" onClick={() => setDialog('trades')}><SquaresFour weight="bold" className="trade-icon" /><span>更多工种</span></button></div>
           <div className="sidebar-context"><span>当前学习身份</span><strong>{profile.name} · {profile.className}</strong><p>{profile.major}</p></div>
         </aside>
@@ -312,9 +322,9 @@ function Workspace({ account, onSignOut, local, error }) {
       {trade.open && !theoryScreen && view !== 'teacher' && <StudyCompanion key={`${profile.id}-${trade.id}`} profile={profile} trade={trade} context={companionContext} />}
       {dialog && <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setDialog(null); }}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button className="modal-close icon-button" onClick={() => setDialog(null)} aria-label="关闭弹窗"><X /></button>
         {dialog === 'identity' && <form onSubmit={saveIdentity}><span className="eyebrow">LEARNING PROFILE</span><h2 id="modal-title">先选择你的学习身份</h2><label className="field">姓名<input className="input" required pattern=".*\S.*" maxLength={20} value={identity.name} onChange={e => setIdentity({ ...identity, name: e.target.value })} /></label><label className="field">学号 / 学习编号<input className="input" required pattern=".*\S.*" maxLength={40} value={identity.id} onChange={e => setIdentity({ ...identity, id: e.target.value })} /></label><label className="field">专业<select className="input" value={identity.major} onChange={e => setIdentity({ ...identity, major: e.target.value })}><option>机械设计制造及其自动化</option><option>机械电子工程</option><option>其他专业（演示）</option></select></label><label className="field">班级<select className="input" value={identity.className} onChange={e => setIdentity({ ...identity, className: e.target.value })}><option>机械 2401 班</option><option>机械 2402 班</option><option>教师待配置班级</option></select></label><button className="button full-width" type="submit">保存并进入学习 <ArrowRight /></button><button className="button secondary full-width teacher-login-link" type="button" onClick={() => { setDialog(null); navigate('teacher'); }}>教师登录</button></form>}
-        {dialog === 'notifications' && <><span className="eyebrow">NOTIFICATIONS</span><h2 id="modal-title">学习通知</h2><div className="notice-item"><span className="notice-icon"><Info weight="fill" /></span><div><strong>欢迎来到金工实习学习空间</strong><p>数控车课程已开放，可在学习中心查看四个学习阶段。</p></div></div></>}
-        {dialog === 'trades' && <><span className="eyebrow">WORKSHOPS</span><h2 id="modal-title">选择你的实习工种</h2><p className="muted">本学期 11 个工种的完整名单由教师最终确认。</p><div className="trade-modal-grid">{trades.map(t => <button key={t.id} onClick={() => { setTrade(t); navigate('home'); setDialog(null); }}><img src={`/assets/trade-${t.id}.png`} width={44} height={44} alt="" /><strong>{t.name}</strong><span className={`pill ${t.open ? 'available' : ''}`}>{t.open ? '可体验' : '待开放'}</span></button>)}</div><p className="muted">其余工种将在教学内容配置完成后展示。</p></>}
-        {dialog === 'about' && <><h2 id="modal-title">使用说明</h2><p>完成课前问卷后，系统按答题结果和学习需求安排第二步的起点。</p><p>{cloud ? '课前测评、问卷和课程反馈保存在账号下，同班教师可查看。视频进度、笔记、题库练习、实操记录和新提交的附件保存在当前浏览器。' : '本地学习数据按超星账号保存在当前浏览器。教师端用于查看与评价本机记录。'}</p><p>伴学使用示例资料，坐标视图用于理解走刀方向。现场上机和最终实操评价均由教师决定。</p></>}
+        {dialog === 'notifications' && <><span className="eyebrow">NOTIFICATIONS</span><h2 id="modal-title">学习通知</h2><div className="notice-item"><span className="notice-icon"><Info weight="fill" /></span><div><strong>欢迎来到金工实习学习空间</strong><p>数控车和焊接课程已开放，可在学习中心查看对应工种的四个学习阶段。</p></div></div></>}
+        {dialog === 'trades' && <><span className="eyebrow">WORKSHOPS</span><h2 id="modal-title">选择你的实习工种</h2><p className="muted">本学期 11 个工种的完整名单由教师最终确认。</p><div className="trade-modal-grid">{trades.map(t => <button key={t.id} onClick={() => { setTrade(t); navigate('home'); setDialog(null); }}><TradeIcon trade={t} width={44} height={44} /><strong>{t.name}</strong><span className={`pill ${t.open ? 'available' : ''}`}>{t.open ? '可体验' : '待开放'}</span></button>)}</div><p className="muted">其余工种将在教学内容配置完成后展示。</p></>}
+        {dialog === 'about' && <><h2 id="modal-title">使用说明</h2><p>完成课前问卷后，系统按答题结果和学习需求安排第二步的起点。</p><p>{cloud ? '课前测评、问卷和课程反馈保存在账号下，同班教师可查看。视频进度、笔记、题库练习、实操记录和新提交的附件保存在当前浏览器。' : '本地学习数据按超星账号保存在当前浏览器。教师端用于查看与评价本机记录。'}</p><p>伴学按当前工种提供课程资料。现场操作和最终实操评价均由教师确认。</p></>}
       </section></div>}
       {showAssessment && <PreAssessmentDialog
         key={`${profile.id}-${trade.id}`}

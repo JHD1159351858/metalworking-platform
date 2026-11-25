@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Bell, CaretRight, Gear, SignIn, SquaresFour, Stack } from '@phosphor-icons/react';
+import { TradeIcon } from './TradeIcon.jsx';
 import { HomeDashboard } from './HomeDashboard.jsx';
 import './guest-home.css';
 
@@ -28,10 +29,10 @@ export function GuestHome({ trades, onLogin }) {
         <h2><Stack weight="duotone" /> 实习工种</h2>
         <div className="trade-list">
           {trades.map((trade, index) => <button key={trade.id} className={`trade-button${index === 0 ? ' selected' : ''}`}
-            type="button" onClick={requestLogin}>
-            <img src={`/assets/trade-${trade.id}.png`} className="trade-icon" alt="" />
+            type="button" onClick={() => { sessionStorage.setItem('metalwork:requested-trade', trade.id); requestLogin(); }}>
+            <TradeIcon trade={trade} className="trade-icon" />
             <span>{trade.name}</span>
-            {index === 0 ? <CaretRight className="trade-chevron" weight="bold" /> : <span className="trade-state">待开放</span>}
+            {trade.open ? <CaretRight className="trade-chevron" weight="bold" /> : <span className="trade-state">待开放</span>}
           </button>)}
           <button className="trade-button more-trades" type="button" onClick={requestLogin}>
             <SquaresFour weight="bold" className="trade-icon" /><span>更多工种</span>

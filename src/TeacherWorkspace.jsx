@@ -7,7 +7,8 @@ import { readClassEvidence } from './cloud-evidence.js';
 import { getSupabase, platformCloud } from './lib/supabase.js';
 import { readLocalStudents } from './learning-data.js';
 
-export function LocalTeacherWorkspace({ trade, onExit }) {
+export function LocalTeacherWorkspace({ trades, onExit }) {
+  const [trade, setTrade] = useState(trades[0]);
   const [, refresh] = useState(0);
   const refreshRecords = () => refresh(value => value + 1);
 
@@ -21,7 +22,7 @@ export function LocalTeacherWorkspace({ trade, onExit }) {
     };
   }, []);
 
-  return <TeacherDashboard students={readLocalStudents(trade)} trade={trade}
+  return <TeacherDashboard key={trade.id} trades={trades} onTradeChange={setTrade} students={readLocalStudents(trade)} trade={trade}
     scopeLabel="数据范围 · 本机学生" onRefresh={refreshRecords} onExit={onExit}
     renderStudent={student => <LearningView key={student.profile.id} view="teacher"
       profile={student.profile} trade={trade} />}>
@@ -38,7 +39,8 @@ async function verify(password) {
   return data === true;
 }
 
-export function CloudTeacherWorkspace({ profile, trade, onSignOut, initialPassword, onPasswordUsed }) {
+export function CloudTeacherWorkspace({ profile, trades, onSignOut, initialPassword, onPasswordUsed }) {
+  const [trade, setTrade] = useState(trades[0]);
   const [unlocked, setUnlocked] = useState(false);
   const [students, setStudents] = useState(null);
   const [error, setError] = useState('');
@@ -111,8 +113,8 @@ export function CloudTeacherWorkspace({ profile, trade, onSignOut, initialPasswo
   if (!unlocked) return <TeacherLogin cloud verify={verify} initialError={loginError}
     onUnlock={() => { setLoginError(''); setUnlocked(true); }} onBack={onSignOut} />;
 
-  return <TeacherDashboard students={students || []} trade={trade} profile={profile}
+  return <TeacherDashboard key={trade.id} trades={trades} onTradeChange={next => { setStudents(null); setError(''); setTrade(next); }} students={students || []} trade={trade} profile={profile}
     scopeLabel={profile.className} cloud loading={!students && !error} error={error}
     onRefresh={refresh} onExit={onSignOut}
-    renderStudent={student => <TeacherCourseEvidence record={student.record} />} />;
+    renderStudent={student => <TeacherCourseEvidence trade={trade} record={student.record} />} />;
 }

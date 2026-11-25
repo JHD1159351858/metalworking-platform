@@ -5,6 +5,8 @@ import { getStudyPlan } from './study-plan.js';
 import { ElectiveStudy, LearningSnapshot } from './ElectiveStudy.jsx';
 import { cncChapters, unitLabel, feedbackLabel } from './cnc-course.js';
 import { literacyQuestions } from './literacy-questions.js';
+import { weldingFocus, weldingQuestions } from './welding-assessment.js';
+import { weldingLessons } from './welding-course.js';
 import './course-evidence.css';
 
 const surveyFields = [
@@ -15,9 +17,16 @@ const surveyFields = [
 
 const feedbackTypes = ['学习心得', '给老师的建议', '课程建议'];
 const formatDate = value => new Date(value).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-const literacyGaps = answers => literacyQuestions.filter(q => answers?.[q.id] != null && String(answers[q.id]) !== String(q.answer)).map(q => q.topic);
+const weldingSurvey = [
+  { ...surveyFields[0], label: '你的焊接学习经历' },
+  { ...surveyFields[1], label: '你对焊接实训前的准备有多大把握？' },
+  { ...surveyFields[2], options: weldingFocus },
+];
+const literacyGaps = (answers, questions) => questions.filter(q => answers?.[q.id] != null && String(answers[q.id]) !== String(q.answer)).map(q => q.topic);
 
-export function PreAssessmentView({ record, update, onNavigate, evidence, onSubmitted }) {
+export function PreAssessmentView({ record, trade, update, onNavigate, evidence, onSubmitted }) {
+  const welding = trade?.id === 'welding';
+  const questions = welding ? weldingQuestions : literacyQuestions;
   const previous = record.preAssessment;
   const initial = previous || record.preAssessmentDraft || {};
   const [answers, setAnswers] = useState(initial.answers || {});
@@ -44,9 +53,10 @@ export function PreAssessmentView({ record, update, onNavigate, evidence, onSubm
   async function submit(event) {
     event.preventDefault();
     if (saving || previous) return;
-    const score = Math.round((1 - literacyGaps(answers).length / literacyQuestions.length) * 100);
+    const correct = questions.filter(q => answers[q.id] === String(q.answer)).length;
+    const score = Math.round(100 * correct / questions.length);
     const { experience, confidence, focus, note = '' } = survey;
-    const entry = { experience, confidence, focus, note: note.trim(), answers, score, at: new Date().toISOString() };
+    const entry = { tradeId: trade?.id, experience, confidence, focus, note: note.trim(), answers, score, at: new Date().toISOString() };
     setSaving(true);
     setError(false);
     try {
@@ -67,8 +77,8 @@ export function PreAssessmentView({ record, update, onNavigate, evidence, onSubm
     <Heading title="课前测评">先做素养测评，再填写课前调查，帮助老师了解你的学习起点。</Heading>
     {previous ? <div className="panel stack">
       <div className="evidence-heading"><h2>课前测评已保存</h2><span className="pill success">{formatDate(previous.at)}</span></div>
-      <EvidenceSummary entry={previous} />
-      <ul className="assessment-skills" aria-label="入课程前的知识起点">{literacyQuestions.map(q => {
+      <EvidenceSummary entry={previous} tradeId={trade?.id} />
+      <ul className="assessment-skills" aria-label="入课程前的知识起点">{questions.map(q => {
         const answer = previous.answers?.[q.id];
         return <li key={q.id}><strong>{q.topic}</strong>　{answer == null ? '未记录' : String(answer) === String(q.answer) ? '本次判断正确' : '建议结合章节再练一次'}</li>;
       })}</ul>
@@ -80,9 +90,9 @@ export function PreAssessmentView({ record, update, onNavigate, evidence, onSubm
       {(draftError || Object.keys(answers).length > 0 || survey.focus || survey.experience || survey.confidence || survey.note) && <p className="muted" role="status">{draftError ? '草稿保存失败，关闭前请重试。' : '草稿已保存，可稍后继续。'}</p>}
       <div className="evidence-grid">
         <section className="panel">
-          <div className="evidence-heading"><h2>素养测评</h2><span className="pill">{literacyQuestions.length} 道题</span></div>
+          <div className="evidence-heading"><h2>{welding ? '焊接安全测评' : '素养测评'}</h2><span className="pill">{questions.length} 道题</span></div>
           <p className="muted">根据你目前的理解作答，提交后查看得分和可补学的知识点。</p>
-          {literacyQuestions.map((question, index) => <fieldset key={question.id} className="literacy-question">
+          {questions.map((question, index) => <fieldset key={question.id} className="literacy-question">
             <legend>{index + 1}. {question.prompt}</legend>
             {question.options.map((option, choice) => <label key={option} className="answer-option">
               <input name={question.id} type="radio" required disabled={saving} checked={answers[question.id] === String(choice)}
@@ -94,7 +104,7 @@ export function PreAssessmentView({ record, update, onNavigate, evidence, onSubm
         <section className="panel">
           <div className="evidence-heading"><h2>调查问卷</h2><span className="pill">学情反馈</span></div>
           <p className="muted">告诉老师你的基础和最希望获得的帮助。</p>
-          {surveyFields.map(field => <label key={field.id} className="field">
+          {(welding ? weldingSurvey : surveyFields).map(field => <label key={field.id} className="field">
             {field.label}
             <select className="input" required disabled={saving} value={survey[field.id] || ''}
               onChange={event => saveDraft(answers, { ...survey, [field.id]: event.target.value })}>
@@ -105,7 +115,7 @@ export function PreAssessmentView({ record, update, onNavigate, evidence, onSubm
           <label className="field">还有什么想让老师了解？（选填）
             <textarea className="textarea" rows={4} maxLength={500} disabled={saving} value={survey.note || ''}
               onChange={event => saveDraft(answers, { ...survey, note: event.target.value })}
-              placeholder="例如：我看过加工演示，但还不熟悉图纸上的标注。" />
+              placeholder={welding ? '例如：我想知道怎样辨认焊缝上的气孔。' : '例如：我看过加工演示，但还不熟悉图纸上的标注。'} />
           </label>
         </section>
       </div>
@@ -132,14 +142,15 @@ export function PreAssessmentDialog({ profile, trade, onDismiss, ...props }) {
     }}>
     <button className="modal-close icon-button" aria-label="关闭课前测评" onClick={onDismiss}><X /></button>
     <span className="pill">{profile.name} · {trade.name} · 首次学习</span>
-    <PreAssessmentView {...props} />
+    <PreAssessmentView trade={trade} {...props} />
   </dialog>;
 }
 
-function EvidenceSummary({ entry }) {
-  const gaps = literacyGaps(entry.answers || {});
+function EvidenceSummary({ entry, tradeId = entry.tradeId }) {
+  const questions = tradeId === 'welding' ? weldingQuestions : literacyQuestions;
+  const gaps = literacyGaps(entry.answers, questions);
   return <>
-    <p><strong>素养测评 {entry.score} 分</strong> · {gaps.length ? `可补学：${gaps.join('、')}` : literacyQuestions.every(q => entry.answers?.[q.id] != null) ? '本次示例题全部答对' : '部分历史作答未记录'}</p>
+    <p><strong>素养测评 {entry.score} 分</strong> · {gaps.length ? `可补学：${gaps.join('、')}` : questions.every(q => entry.answers?.[q.id] != null) ? '本次测评全部答对' : '部分历史作答未记录'}</p>
     <dl className="evidence-summary">
       <div><dt>学习经历</dt><dd>{entry.experience}</dd></div>
       <div><dt>准备情况</dt><dd>{entry.confidence}</dd></div>
@@ -150,6 +161,16 @@ function EvidenceSummary({ entry }) {
 }
 
 export function CourseFeedbackView({ record, update, onNavigate, evidence }) {
+  return <>
+    <Heading title="智能选学及课程反馈" />
+    <LearningSnapshot record={record} />
+    <CourseFeedbackForm record={record} update={update} evidence={evidence}>
+      <ElectiveStudy record={record} update={update} onNavigate={onNavigate} />
+    </CourseFeedbackForm>
+  </>;
+}
+
+export function CourseFeedbackForm({ record, update, evidence, topics, prompt, children }) {
   const [type, setType] = useState(feedbackTypes[0]);
   const [text, setText] = useState('');
   const [saved, setSaved] = useState(false);
@@ -157,8 +178,9 @@ export function CourseFeedbackView({ record, update, onNavigate, evidence }) {
   const [error, setError] = useState(false);
   const pending = useRef(null);
   const [chapterId, setChapterId] = useState('');
-  const prefix = chapterId ? '【第 ' + chapterId + ' 节】' : '';
-  const prompts = { '学习心得': '例如：换了图纸上的零点后，我重新判断了方向……', '给老师的建议': '例如：我希望老师再演示一次……', '课程建议': '例如：这节的图中，哪一处需要放大或补充说明？' };
+  const selectedTopic = topics?.find(item => item.id === chapterId);
+  const prefix = chapterId ? selectedTopic ? '【' + selectedTopic.title + '】' : '【第 ' + chapterId + ' 节】' : '';
+  const prompts = { '学习心得': prompt || '例如：换了图纸上的零点后，我重新判断了方向……', '给老师的建议': '例如：我希望老师再演示一次……', '课程建议': '例如：你希望补充哪些课程资料或演示？' };
 
   async function submit(event) {
     event.preventDefault();
@@ -183,10 +205,8 @@ export function CourseFeedbackView({ record, update, onNavigate, evidence }) {
   }
 
   return <>
-    <Heading title="智能选学及课程反馈" />
-    <LearningSnapshot record={record} />
-    <div className="evidence-grid elective-feedback">
-      <ElectiveStudy record={record} update={update} onNavigate={onNavigate} />
+    <div className={children ? 'evidence-grid elective-feedback' : undefined}>
+      {children}
       <form className="panel stack" onSubmit={submit}>
         <div className="evidence-heading"><h2>课程反馈</h2></div>
         <label className="field">反馈类型<select className="input" value={type} disabled={saving} onChange={event => { setType(event.target.value); setSaved(false); }}>
@@ -194,7 +214,7 @@ export function CourseFeedbackView({ record, update, onNavigate, evidence }) {
         </select></label>
         <label className="field">这条反馈关于<select className="input" value={chapterId} disabled={saving} onChange={event => { setChapterId(event.target.value); setSaved(false); }}>
           <option value="">整门课程</option>
-          {cncChapters.map(ch => <option key={ch.id} value={ch.id}>{unitLabel(ch.id)} · {ch.title}</option>)}
+          {(topics || cncChapters).map(ch => <option key={ch.id} value={ch.id}>{topics ? ch.title : unitLabel(ch.id) + ' · ' + ch.title}</option>)}
         </select></label>
         <label className="field">反馈内容<textarea className="textarea" rows={5} required maxLength={1000 - prefix.length} disabled={saving} value={text}
           onChange={event => { setText(event.target.value); setSaved(false); }}
@@ -216,11 +236,15 @@ function FeedbackList({ entries }) {
   </article>);
 }
 
-export function TeacherCourseEvidence({ record }) {
+export function TeacherCourseEvidence({ record, trade }) {
+  const preferredId = record.studyPreference?.chapterId;
+  const preferredTitle = trade?.id === 'welding'
+    ? weldingLessons.find(lesson => lesson.id === preferredId)?.title
+    : unitLabel(preferredId);
   return <div className="evidence-grid evidence-history">
     <section className="panel stack">
       <div className="evidence-heading"><h3>课前学情</h3>{record.preAssessment && <time className="muted" dateTime={record.preAssessment.at}>{formatDate(record.preAssessment.at)}</time>}</div>
-      {record.preAssessment ? <EvidenceSummary entry={record.preAssessment} /> : <p className="muted">当前学生还没有提交素养测评和课前问卷。</p>}
+      {record.preAssessment ? <EvidenceSummary entry={record.preAssessment} tradeId={trade?.id} /> : <p className="muted">当前学生还没有提交素养测评和课前问卷。</p>}
     </section>
     <section className="panel">
       <div className="evidence-heading"><h3>学生课程反馈</h3><span className="pill">{record.feedback.length} 条</span></div>
@@ -234,6 +258,6 @@ export function TeacherCourseEvidence({ record }) {
           {entry.cause === 'origin' ? ' · 零点判断' : entry.cause === 'direction' ? ' · 方向判断' : ''}</p>
       </div><time className="muted" dateTime={entry.at}>{formatDate(entry.at)}</time></div>)}
     </section>}
-    {record.studyPreference && <section className="panel"><h3>学生自己选择的方向</h3><p>{unitLabel(record.studyPreference.chapterId)}</p>{record.studyPreference.note && <p className="evidence-text">{record.studyPreference.note}</p>}</section>}
+    {record.studyPreference && <section className="panel"><h3>学生自己选择的方向</h3><p>{preferredTitle || '历史选学内容'}</p>{record.studyPreference.note && <p className="evidence-text">{record.studyPreference.note}</p>}</section>}
   </div>;
 }

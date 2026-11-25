@@ -1,0 +1,5 @@
+.weld-rubric-wrap { overflow-x: auto; }
+.weld-rubric { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.65; }
+.weld-rubric th, .weld-rubric td { padding: 9px 12px; border-bottom: 1px solid #dce8fa; text-align: left; vertical-align: top; }
+.weld-rubric thead { background: #eef5ff; color: #214e92; }
+.weld-rubric th { white-space: nowrap; }

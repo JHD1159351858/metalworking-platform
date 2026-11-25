@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { weldingRubric } from './welding-course.js';
 import { Heading } from './LearningUI.jsx';
 import { loadRules, saveRules } from './learning-data.js';
 import { measurementResult, measurementText, reviewFields } from './practical-work.js';
@@ -39,7 +40,7 @@ function PracticeDrawing() {
   </section>;
 }
 
-function SubmissionDetails({ entry, profile, trade }) {
+export function SubmissionDetails({ entry, profile, trade }) {
   const [error, setError] = useState('');
   const submittedDrawing = drawingLink(entry.drawingUrl);
   async function download(file) {
@@ -57,13 +58,14 @@ function SubmissionDetails({ entry, profile, trade }) {
     {entry.task && <p><strong>任务要求</strong>　{entry.task}</p>}
     {entry.drawing && <p><strong>图纸版本</strong>　{entry.drawing}　{submittedDrawing && <a href={submittedDrawing} target="_blank" rel="noopener noreferrer">打开提交时的图纸链接</a>}</p>}
     {entry.plan && <p><strong>工艺方案</strong>　{entry.plan}</p>}
-    <p><strong>测量记录</strong>　{entry.measurements}</p>
+    <p><strong>{trade.id === 'welding' ? '焊缝观察记录' : '测量记录'}</strong>　{entry.measurements}</p>
     {entry.measurement?.check && <p><strong>提交时的尺寸自查</strong>　{entry.measurement.check}</p>}
     <p><strong>过程记录</strong>　{entry.notes}</p>
     <div className="file-list">{entry.files?.map((file, i) => file.id
       ? <button type="button" className="button ghost" key={file.id} onClick={() => download(file)}>下载 {file.name}</button>
       : <span className="pill" key={i}>{file.name} · 仅有文件信息</span>)}</div>
     {error && <p role="alert">{error}</p>}
+    {entry.review?.criteria && <p><strong>分项得分</strong>　{Object.entries(entry.review.criteria).map(([name, value]) => name + ' ' + value + ' 分').join(' · ')}</p>}
     {entry.review && <p className="info-banner"><strong>教师评语</strong>　{entry.review.comment}
       {entry.review.field && ' · 补交' + reviewFields[entry.review.field]}
       {entry.review.score != null && ' · ' + entry.review.score + ' 分'}</p>}
@@ -203,6 +205,7 @@ export function PracticalView({ record, rules, update, onNavigate, profile, trad
 }
 
 export function TeacherPracticalReview({ record, update, profile, trade }) {
+  const welding = trade.id === 'welding';
   const latest = record.submissions.at(-1);
   const [score, setScore] = useState('');
   const [comment, setComment] = useState('');
@@ -213,6 +216,11 @@ export function TeacherPracticalReview({ record, update, profile, trade }) {
     if (!comment.trim()) return;
     const action = { at: snapshotTime(), comment: comment.trim(), score: score === '' ? null : Number(score) };
     if (status === '需补交材料') action.field = field;
+    else if (welding) {
+      const form = new FormData(event.currentTarget);
+      action.criteria = Object.fromEntries(weldingRubric.map(item => [item.name, Number(form.get(item.name))]));
+      action.score = Object.values(action.criteria).reduce((total, value) => total + value, 0);
+    }
     update(r => ({
       ...r, submissions: r.submissions.map(s => s.id === latest.id && !s.review && r.submissions.at(-1).id === s.id
         ? { ...s, status, review: action } : s),
@@ -230,9 +238,15 @@ export function TeacherPracticalReview({ record, update, profile, trade }) {
         <label className="field">最终结论<select className="input" value={status} onChange={e => setStatus(e.target.value)}>
           <option>通过</option><option>需补交材料</option><option>未通过</option></select></label>
         {status === '需补交材料' && <label className="field">需要补交的位置<select className="input" value={field} onChange={e => setField(e.target.value)}>
-          {Object.entries(reviewFields).map(([key, text]) => <option key={key} value={key}>{text}</option>)}</select></label>}
-        <label className="field">评分（0 至 100 分{status === '需补交材料' ? '，可留空' : ''}）<input className="input" type="number" min="0" max="100"
-          value={score} onChange={e => setScore(e.target.value)} required={status !== '需补交材料'} /></label>
+          {Object.entries(welding ? { measurements: '焊缝观察记录', files: '附件材料', notes: '现场过程记录' } : reviewFields).map(([key, text]) => <option key={key} value={key}>{text}</option>)}</select></label>}
+        {welding ? status !== '需补交材料' && <fieldset className="stack">
+          <legend>焊缝现场评分（满分 60 分）</legend>
+          {weldingRubric.map(item => <label className="field" key={item.name}>{item.name}（0～{item.max} 分）
+            <small className="muted">{item.deductions}</small>
+            <input className="input" type="number" name={item.name} min="0" max={item.max} required />
+          </label>)}
+        </fieldset> : <label className="field">评分（0 至 100 分{status === '需补交材料' ? '，可留空' : ''}）<input className="input" type="number" min="0" max="100"
+          value={score} onChange={e => setScore(e.target.value)} required={status !== '需补交材料'} /></label>}
         <label className="field">教师评语<textarea className="textarea" rows={3} value={comment} onChange={e => setComment(e.target.value)} required maxLength={3000} placeholder="结合某条材料，写明依据或待补充的内容" /></label>
         <button className="button">保存实操评价</button>
       </form>}
@@ -271,10 +285,10 @@ export function TeacherCourseSettings({ trade }) {
     <label className="field">实操任务说明<textarea className="textarea" rows={3} value={task} onChange={e => setTask(e.target.value)} required /></label>
     <label className="field">正式图纸或任务书版本（选填）<input className="input" value={version} onChange={e => setVersion(e.target.value)} maxLength={120} /></label>
     <label className="field">正式图纸链接（选填）<input className="input" type="url" value={drawingUrl} onChange={e => setDrawingUrl(e.target.value)} placeholder="https://" /></label>
-    <p className="muted">可为此版本指定一个测量项。留空时由学生记录实测值，教师结合现场图纸评阅。</p>
+    {trade.id !== 'welding' && <><p className="muted">可为此版本指定一个测量项。留空时由学生记录实测值，教师结合现场图纸评阅。</p>
     <div className="practical-inputs">{[['item','测量项目'],['lower','下限（mm）'],['upper','上限（mm）']].map(([key, label]) =>
       <label key={key} className="field">{label}<input className="input" inputMode={key === 'item' ? 'text' : 'decimal'} value={limits[key]}
-        maxLength={key === 'item' ? 160 : 15} onChange={e => setLimits({ ...limits, [key]: e.target.value })} /></label>)}</div>
+        maxLength={key === 'item' ? 160 : 15} onChange={e => setLimits({ ...limits, [key]: e.target.value })} /></label>)}</div></>}
     <button className="button">保存考核配置</button>{notice && <p role="status">{notice}</p>}
   </form>;
 }
